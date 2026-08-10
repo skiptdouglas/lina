@@ -19,6 +19,7 @@ import Account from './Account.vue'
 import PermUserList from './PermUser.vue'
 import AssetSession from './AssetSession.vue'
 import AssetCommand from './AssetCommand.vue'
+import AsBuilt from './AsBuilt.vue'
 
 export default {
   name: 'AssetListDetail',
@@ -29,7 +30,8 @@ export default {
     Account,
     PermUserList,
     AssetSession,
-    AssetCommand
+    AssetCommand,
+    AsBuilt
   },
   data() {
     return {
@@ -61,6 +63,10 @@ export default {
             title: this.$t('Commands'),
             name: 'AssetCommand',
             hidden: () => !this.$hasPerm('terminal.view_command')
+          },
+          {
+            title: this.$t('AsBuilt'),
+            name: 'AsBuilt'
           }
         ],
         hasRightSide: true,
