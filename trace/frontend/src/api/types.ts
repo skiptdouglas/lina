@@ -125,3 +125,107 @@ export interface Readiness {
   status: string
   dependencies: DependencyHealth[]
 }
+
+// ---------------------------------------------------------------------------
+// Evidence anchoring (docs/ANCHORING.md)
+// ---------------------------------------------------------------------------
+
+export type AnchorStatus = 'PENDING' | 'SUBMITTED' | 'CONFIRMED' | 'FAILED'
+
+/** How much of the guarantee survives TRACE itself being compromised. */
+export type Independence = 'SELF_ATTESTED' | 'THIRD_PARTY' | 'PUBLIC_BLOCKCHAIN'
+
+export interface LogStatus {
+  log_id: string
+  tree_size: number
+  root_hash: string
+  last_anchored_size: number | null
+  last_anchored_root: string | null
+  last_anchor_id: string | null
+  last_anchor_at: string | null
+  unanchored_entries: number
+  audit_log_size: number
+  signing_key_id: string
+  signing_algorithm: string
+  public_key_b64: string
+  default_backend: string
+}
+
+export interface Anchor {
+  anchor_id: string
+  log_id: string
+  tree_size: number
+  root_hash: string
+  previous_tree_size: number | null
+  previous_root_hash: string | null
+  backend: string
+  independence: Independence
+  status: AnchorStatus
+  external_ref: string | null
+  explorer_url: string | null
+  detail: string
+  key_id: string
+  algorithm: string
+  created_at: string
+  confirmed_at: string | null
+  last_checked_at: string | null
+}
+
+export interface AnchorBackendStatus {
+  name: string
+  independence: Independence
+  available: boolean
+  detail: string
+  is_default: boolean
+}
+
+export interface AnchorVerification {
+  anchor_id: string
+  verified: boolean
+  status: AnchorStatus
+  backend: string
+  independence: Independence
+  detail: string
+  root_hash: string
+  signature_valid: boolean
+  root_recomputed: boolean
+  external_ref: string | null
+  metadata: Record<string, unknown>
+}
+
+export interface LogEntryRow {
+  leaf_index: number
+  entry_type: string
+  entry_hash: string
+  leaf_hash: string
+  evidence_id: string | null
+  case_id: string | null
+  created_at: string
+}
+
+export interface ConsistencyProof {
+  log_id: string
+  first: number
+  second: number
+  first_root: string
+  second_root: string
+  proof: string[]
+  verified: boolean
+  detail: string
+}
+
+/** A self-contained, offline-verifiable proof of one evidence object. */
+export interface ProofBundle {
+  bundle_version: string
+  evidence_id: string
+  manifest: { manifest_version: string; entry_type: string; body: Record<string, unknown> }
+  entry_hash: string
+  leaf: { index: number; leaf_hash: string; hash_construction: string }
+  tree: { tree_size: number; root_hash: string; inclusion_proof: string[] }
+  signed_tree_head: Record<string, unknown>
+  signature: { algorithm: string; key_id: string; public_key_b64: string; value: string }
+  anchor: Record<string, unknown> | null
+  how_to_verify: { offline_tool: string; usage: string; steps: string[] }
+  what_this_proves: string[]
+  what_this_does_not_prove: string[]
+}

@@ -28,6 +28,15 @@ Also delivered: hash-chained chain-of-custody audit, RBAC + tenant isolation,
 `GET /capabilities`, the 501 NOT_IMPLEMENTED contract, ClickHouse schema
 bootstrap, synthetic telemetry generator for `CASE-DEMO-001`.
 
+### Sprint 1.5 — Evidence anchoring ✅ *implemented*
+
+`docs/ANCHORING.md`. RFC 6962 transparency log (one leaf per evidence
+manifest, appended in the ingest transaction), inclusion **and** consistency
+proofs, Ed25519 signed tree heads, four anchor backends (local hash-chained
+ledger, OpenTimestamps/Bitcoin, EVM, file receipt), proof bundles, and
+`scripts/verify_anchor.py` — a dependency-free offline verifier a third party
+can run without TRACE.
+
 ---
 
 ## Sprint 2 — Normalization, search, timeline
@@ -98,7 +107,11 @@ bootstrap, synthetic telemetry generator for `CASE-DEMO-001`.
 
 | Item | Note |
 |---|---|
-| `audit-distributed-chain` | DB-sequence or dedicated writer for multi-replica audit ordering |
+| `audit-distributed-chain` | DB-sequence or dedicated writer for multi-replica audit ordering (the transparency log append lock has the same constraint) |
+| Persisted Merkle node cache | Roots are recomputed `O(n)` from leaves; fine to millions, not to billions |
+| KMS/HSM log signing | `Signer` interface exists; `KmsSigner` raises rather than falling back |
+| Bitcoin header validation | OTS attestation height is reported, not chain-validated |
+| Signed collector receipts | Would move the anchored timestamp from ingest back to collection |
 | Databricks / Delta Lake analytics backend | `AnalyticsStore` implementation alongside ClickHouse (§56) |
 | Vector search in OpenSearch | semantic similarity for Pattern Hunter |
 | Neo4j `GraphClient` | enterprise substitution |

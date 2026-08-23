@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 
 import { api, ApiError } from '@/api/client'
 import { Pill } from '@/components/Pill'
+import { ProofPanel } from '@/components/ProofPanel'
 import { useAsync } from '@/hooks/useAsync'
 import type { AuditRecord, Case, Evidence, Paged, Verification } from '@/api/types'
 
@@ -300,6 +301,7 @@ function EvidenceTable({
                   >
                     {busy === item.evidence_id ? 'Verifying…' : 'Verify evidence'}
                   </button>
+                  <ProofPanel evidenceId={item.evidence_id} sha256={item.sha256} />
                 </div>
               </div>
 

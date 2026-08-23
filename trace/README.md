@@ -23,6 +23,9 @@ Working today:
   **round-trip verified before the metadata row is committed**
 * Integrity verification on demand, including tamper and missing-object detection
 * Hash-chained chain of custody with an integrity check of its own
+* **Evidence anchoring** — an RFC 6962 Merkle log of evidence manifests, signed
+  tree heads, and roots published to an immutable ledger
+  ([docs/ANCHORING.md](docs/ANCHORING.md))
 * RBAC, tenant isolation, rate limiting, audited downloads
 * `GET /api/v1/capabilities` — a machine-readable map of what is and is not built
 
@@ -53,6 +56,8 @@ field at the top right, and:
 4. Press **Verify evidence** — the stored object is re-read, re-hashed, and
    reported as `VERIFIED`
 5. Scroll to **Chain of custody** to see `CASE_CREATE → COLLECT → STORE → VERIFY`
+6. Open **Anchoring → Anchor now**, then use **Show proof** on the evidence row
+   to walk file → digest → manifest → leaf → root → signature → ledger
 
 The API is at http://localhost:8000, with interactive docs at `/docs`.
 
@@ -97,11 +102,47 @@ configuration changes rather than rewrites.
 
 ```
 Finding → Detection → Normalized Event → Original Event → Evidence Object → SHA-256
+                                                                              ↓
+                                          Merkle leaf → signed root → immutable ledger
 ```
 
 This is structural, not a convention: detections require the event IDs they
 fired on, graph edges require the events that support them, and an AI statement
 with no evidence reference cannot be serialized as a `FACT`.
+
+### Evidence anchoring
+
+```
+Evidence File → SHA-256 → Manifest → Merkle Leaf → Root → Signed by TRACE → Ledger
+```
+
+**Only the 32-byte root reaches the ledger.** Evidence, manifests and case
+metadata never leave TRACE — publishing them would expose live investigations
+permanently and collide head-on with the right to erasure
+([ADR-0007](docs/adr/0007-anchor-merkle-roots-not-evidence.md)).
+
+Backends: a local hash-chained ledger (self-attested, works offline),
+OpenTimestamps (Bitcoin, free, confirms in hours), an EVM chain (costs gas,
+confirms in minutes), or a signed file receipt for an external notary. Each
+anchor records how independent it is, and TRACE never lets a local anchor be
+mistaken for a blockchain one.
+
+Any evidence object yields a **proof bundle** that verifies with no access to
+TRACE at all:
+
+```bash
+python3 scripts/verify_anchor.py proof.json \
+    --evidence-file sysmon.jsonl --expect-key-id <published key id>
+```
+
+That script has no dependencies — standard library only, with a pure-Python
+Ed25519 verifier built in — so it runs on an air-gapped laptop. A guarantee you
+can only check by asking the system under scrutiny is not a guarantee.
+
+**What an anchor proves:** this digest existed before a given time, and the log
+was not rewritten. **What it does not prove:** that the evidence is authentic.
+Anchoring a forgery anchors a forgery. TRACE says so in the API response, the
+bundle, the UI and the verifier output.
 
 ---
 
@@ -112,6 +153,7 @@ with no evidence reference cannot be serialized as a `FACT`.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, layering, replaceable interfaces, provenance |
 | [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Cases, evidence, audit chain, events, entities, graph |
 | [docs/API.md](docs/API.md) | Endpoints, the 501 contract, request/response shapes |
+| [docs/ANCHORING.md](docs/ANCHORING.md) | Merkle log, signing, ledgers, proof bundles, threat model, known limits |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, RBAC matrix, evidence handling, AI boundary, known gaps |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Sprint-by-sprint scope and definition of done |
 | [docs/SPRINT1_PLAN.md](docs/SPRINT1_PLAN.md) | The plan this sprint was built against |
@@ -130,7 +172,8 @@ collectors/  Collection contracts and configuration per source
 rules/       sigma/ · yara/ · correlation/ (sequence definitions)
 schemas/     OCSF-inspired event schema and mapping
 deploy/      ClickHouse DDL applied at startup
-scripts/     Environment init, synthetic telemetry, smoke test
+scripts/     Environment init, signing-key generation, synthetic telemetry,
+             smoke test, and the dependency-free offline proof verifier
 sample-data/ Generated synthetic telemetry (git-ignored)
 docs/        Architecture, data model, API, security, roadmap, ADRs
 ```
@@ -141,7 +184,7 @@ docs/        Architecture, data model, API, security, roadmap, ADRs
 
 ```bash
 make backend-deps      # create backend/.venv
-make test              # 88 tests, no infrastructure required
+make test              # 255 tests, no infrastructure required
 make lint              # ruff over app and tests
 make frontend-deps
 make frontend-build    # typecheck + production build
@@ -156,6 +199,13 @@ full ingest→verify workflow, tamper and missing-object detection, audit-chain
 tamper detection, the RBAC matrix (including a sweep asserting every `/api/v1`
 route is authenticated), and the 501 contract for every stub.
 
+Anchoring adds: the RFC 6962 tree checked exhaustively against an independent
+verifier (every leaf of every tree size to 33, every consistency pair — around
+1,100 cases), regression tests for both classic Merkle flaws, the manifest
+mutability contract in both directions, a pure-Python Ed25519 implementation
+cross-checked against `cryptography`, and the offline verifier run as a real
+subprocess — including with `cryptography` deliberately blocked.
+
 ---
 
 ## Security
@@ -167,7 +217,10 @@ matrix, evidence-handling rules, the AI boundary, and an explicit list of
 **known gaps in the MVP**.
 
 There are no credentials in this repository. Compose refuses to start when a
-secret is missing rather than falling back to a default password.
+secret is missing rather than falling back to a default password. The Ed25519
+log signing key is generated by `make init` into `deploy/keys/` (git-ignored)
+and mounted read-only; TRACE refuses to generate an ephemeral one in
+staging or production.
 
 Report vulnerabilities privately to the maintainers rather than in a public
 issue.

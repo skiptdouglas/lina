@@ -6,6 +6,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     ai,
+    anchoring,
     audit,
     cases,
     detections,
@@ -23,6 +24,7 @@ api_router.include_router(health.router)
 api_router.include_router(cases.router)
 api_router.include_router(evidence.router)
 api_router.include_router(audit.router)
+api_router.include_router(anchoring.router)
 api_router.include_router(ingestion.router)
 api_router.include_router(search.router)
 api_router.include_router(entities.router)

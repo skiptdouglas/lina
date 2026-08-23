@@ -7,12 +7,19 @@
  */
 
 import type {
+  Anchor,
+  AnchorBackendStatus,
+  AnchorVerification,
   AuditRecord,
   Capabilities,
   Case,
   ChainVerification,
+  ConsistencyProof,
   Evidence,
+  LogEntryRow,
+  LogStatus,
   Paged,
+  ProofBundle,
   Readiness,
   Verification,
 } from './types'
@@ -112,6 +119,26 @@ export const api = {
   /** Download URL — the reason is recorded in the chain of custody. */
   downloadUrl: (evidenceId: string, reason: string) =>
     `${BASE_URL}/evidence/${encodeURIComponent(evidenceId)}/download?reason=${encodeURIComponent(reason)}`,
+
+  // ---- anchoring (docs/ANCHORING.md) ----
+  logStatus: () => request<LogStatus>('/anchoring/log'),
+  logEntries: (limit = 50) => request<{ items: LogEntryRow[]; total: number }>(
+    `/anchoring/log/entries?limit=${limit}`,
+  ),
+  anchorBackends: () => request<{ items: AnchorBackendStatus[] }>('/anchoring/backends'),
+  listAnchors: () => request<Paged<Anchor>>('/anchors'),
+  createAnchor: (payload: { backend?: string; force?: boolean } = {}) =>
+    request<Anchor>('/anchors', { method: 'POST', body: JSON.stringify(payload) }),
+  refreshAnchor: (anchorId: string) =>
+    request<Anchor>(`/anchors/${encodeURIComponent(anchorId)}/refresh`, { method: 'POST' }),
+  verifyAnchor: (anchorId: string) =>
+    request<AnchorVerification>(`/anchors/${encodeURIComponent(anchorId)}/verify`),
+  consistency: (first: number, second: number) =>
+    request<ConsistencyProof>(`/anchoring/consistency?first=${first}&second=${second}`),
+  evidenceProof: (evidenceId: string) =>
+    request<ProofBundle>(`/evidence/${encodeURIComponent(evidenceId)}/proof`),
+  receiptUrl: (anchorId: string) =>
+    `${BASE_URL}/anchors/${encodeURIComponent(anchorId)}/receipt`,
 
   listAudit: (params: { case_id?: string; evidence_id?: string } = {}) => {
     const search = new URLSearchParams()

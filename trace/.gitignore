@@ -18,6 +18,12 @@ dist/
 # The UI lockfile IS committed — reproducible container builds depend on it.
 !package-lock.json
 
+# Log signing keys. The private key obviously never belongs in git; the
+# generated public key is per-deployment too, so publish it in your case
+# reports and on a page you control, not here (docs/ANCHORING.md §5).
+deploy/keys/
+*.pem
+
 # Local state
 backend/data/
 sample-data/case-demo-001/

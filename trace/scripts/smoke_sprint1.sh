@@ -77,4 +77,29 @@ curl -fsS "${auth[@]}" "$API/audit/verify-chain" | \
   jq -e '.verified == true' >/dev/null || fail "audit chain is broken"
 echo "    chain verified"
 
+step "Anchoring the transparency log"
+if curl -fsS "${auth[@]}" "$API/anchoring/log" > /tmp/trace-log.json 2>/dev/null; then
+  jq -r '"    log \(.log_id): \(.tree_size) entr(ies), \(.unanchored_entries) unanchored"' /tmp/trace-log.json
+  jq -r '"    signing key \(.signing_key_id)"' /tmp/trace-log.json
+
+  anchor_code=$(curl -sS -o /tmp/trace-anchor.json -w '%{http_code}' "${auth[@]}" \
+    -H 'Content-Type: application/json' -X POST "$API/anchors" -d '{}')
+  if [[ "$anchor_code" == "201" ]]; then
+    jq -r '"    anchored tree size \(.tree_size) to \(.backend) [\(.independence)] -> \(.status)"' /tmp/trace-anchor.json
+  elif [[ "$anchor_code" == "409" ]]; then
+    echo "    already anchored at this tree size"
+  else
+    fail "anchoring returned $anchor_code: $(cat /tmp/trace-anchor.json)"
+  fi
+
+  step "Exporting a proof bundle and verifying it offline"
+  curl -fsS "${auth[@]}" "$API/evidence/${evidence_id}/proof" > /tmp/trace-proof.json
+  key_id=$(jq -r '.signature.key_id' /tmp/trace-proof.json)
+  python3 scripts/verify_anchor.py /tmp/trace-proof.json \
+      --evidence-file "$artifact" --expect-key-id "$key_id" --no-colour \
+    || fail "offline verification failed"
+else
+  echo "    anchoring is not enabled on this deployment — skipping"
+fi
+
 printf '\n\033[32mSprint 1 workflow passed.\033[0m\n'

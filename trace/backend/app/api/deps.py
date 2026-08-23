@@ -9,6 +9,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.anchoring.service import AnchoringService
 from app.audit.service import AuditService
 from app.cases.service import CaseService
 from app.core.config import Settings
@@ -105,6 +106,7 @@ def get_ingestion_service(
     request: Request,
     session: Annotated[AsyncSession, Depends(get_session)],
     audit: Annotated[AuditService, Depends(get_audit_service)],
+    anchoring: Annotated[AnchoringService, Depends(get_anchoring_service)],
 ) -> IngestionService:
     state = get_state(request)
     return IngestionService(
@@ -113,6 +115,22 @@ def get_ingestion_service(
         audit=audit,
         queue=state.queue,
         settings=state.settings,
+        anchoring=anchoring if state.signer is not None else None,
+    )
+
+
+def get_anchoring_service(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    audit: Annotated[AuditService, Depends(get_audit_service)],
+) -> AnchoringService:
+    state = get_state(request)
+    return AnchoringService(
+        session,
+        settings=state.settings,
+        signer=state.signer,
+        backends=state.anchor_backends,
+        audit=audit,
     )
 
 
@@ -122,3 +140,4 @@ AuditDep = Annotated[AuditService, Depends(get_audit_service)]
 CaseServiceDep = Annotated[CaseService, Depends(get_case_service)]
 EvidenceServiceDep = Annotated[EvidenceService, Depends(get_evidence_service)]
 IngestionServiceDep = Annotated[IngestionService, Depends(get_ingestion_service)]
+AnchoringServiceDep = Annotated[AnchoringService, Depends(get_anchoring_service)]

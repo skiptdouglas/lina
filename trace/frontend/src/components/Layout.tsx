@@ -9,6 +9,7 @@ import type { Capabilities } from '@/api/types'
 const NAV = [
   { to: '/', label: 'Dashboard', capability: null },
   { to: '/cases', label: 'Cases', capability: null },
+  { to: '/anchoring', label: 'Anchoring', capability: null },
   { to: '/search', label: 'Search', capability: 'search.query' },
   { to: '/patterns', label: 'Pattern Hunter', capability: 'patterns.find_similar' },
   { to: '/entities', label: 'Entities', capability: 'entities.registry' },

@@ -141,6 +141,8 @@ Defined as abstract base classes, selected by configuration:
 | `GraphClient` | `graph/client.py` | *Memgraph (Sprint 3)*, *Neo4j (planned)* |
 | `AIProvider` | `ai/provider.py` | *Ollama (Sprint 6)*, OpenAI/Azure/Anthropic/vLLM (planned) |
 | `AuditSink` | `audit/sinks.py` | `SqlAuditSink`, `ClickHouseAuditSink`, `NullAuditSink` |
+| `AnchorBackend` | `anchoring/backends/` | `LocalLedger`, `OpenTimestamps`, `Evm`, `FileReceipt` |
+| `Signer` | `anchoring/signing.py` | `Ed25519Signer`, *KMS/HSM (planned)* |
 | `IngestionQueue` | `ingestion/queue.py` | `InMemoryIngestionQueue`, *broker-backed (planned)* |
 | `ThreatIntelProvider` | `threatintel/provider.py` | *MISP / OpenCTI / TAXII (Sprint 7)* |
 
@@ -162,12 +164,35 @@ but fabricated data. See §9.
 | Search index | OpenSearch | Text analysis TRACE should not reimplement |
 | Entities & relationships | Memgraph (+ registry in Metadata DB) | Traversal, path queries |
 | Pseudonym mappings | Metadata DB, **separate table + separate access control** | Must be isolatable from analytics data (§30) |
+| Transparency log leaves | Metadata DB (`merkle_leaves`) | Append-only; written in the same transaction as the evidence row |
+| Anchors / signed tree heads | Metadata DB (`anchors`) + an external ledger | The ledger holds only a 32-byte root (ADR-0007) |
 
 > **ADR-0003** explains why case/evidence metadata is *not* in ClickHouse:
 > ClickHouse is not designed for high-frequency small mutations
 > (legal hold flips, case status changes) or for transactional integrity.
 
 ---
+
+## 6a. Evidence anchoring
+
+Ingest appends the evidence *manifest* to a per-tenant RFC 6962 transparency
+log. Periodically the root of that log is signed (Ed25519) and published to an
+immutable ledger:
+
+```
+Evidence -> SHA-256 -> Manifest -> Merkle leaf -> Root -> Signed -> Ledger
+```
+
+**Only the 32-byte root leaves TRACE.** Evidence, manifests and case metadata
+never reach a ledger — see [ADR-0007](adr/0007-anchor-merkle-roots-not-evidence.md).
+Backends differ in how independent they are (`local` is self-attested;
+OpenTimestamps and EVM are not), and that difference is reported everywhere
+rather than blurred ([ADR-0009](adr/0009-anchoring-claims-must-be-precise.md)).
+
+Proof bundles are verifiable offline by `scripts/verify_anchor.py`, which has
+no dependencies and no TRACE imports — a guarantee only checkable by the
+system under scrutiny is not a guarantee. Full design in
+[ANCHORING.md](ANCHORING.md).
 
 ## 7. Provenance chain (the "SHOW EVIDENCE" requirement)
 
@@ -185,7 +210,14 @@ Original Event     byte range / record index inside the raw object
 Evidence Object    evidence.storage_bucket + storage_key
    ↓
 SHA-256            evidence.sha256  → GET /evidence/{id}/verify
+   ↓
+Merkle leaf        SHA-256(0x00 || canonical manifest)
+   ↓
+Signed root        Ed25519 tree head → published to a ledger
 ```
+
+The last two steps are what let the chain be checked by someone who does not
+trust TRACE: `GET /evidence/{id}/proof` returns a self-contained bundle.
 
 This is enforced structurally: the report and finding models **require**
 non-empty provenance references. A statement with no evidence reference

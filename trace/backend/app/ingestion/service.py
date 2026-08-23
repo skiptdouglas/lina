@@ -16,6 +16,7 @@ from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.anchoring.service import AnchoringService
 from app.audit.actions import AuditAction
 from app.audit.service import AuditService
 from app.cases.service import CaseService
@@ -43,12 +44,14 @@ class IngestionService:
         audit: AuditService,
         queue: IngestionQueue,
         settings: Settings,
+        anchoring: AnchoringService | None = None,
     ) -> None:
         self.session = session
         self.store = store
         self.audit = audit
         self.queue = queue
         self.settings = settings
+        self.anchoring = anchoring
 
     async def ingest(
         self,
@@ -119,6 +122,16 @@ class IngestionService:
             self.session.add(evidence)
             await self.session.flush()
 
+            # Commit the manifest to the transparency log inside this same
+            # transaction: evidence must never exist without its log entry,
+            # or the log stops being a complete record (docs/ANCHORING.md).
+            leaf_index: int | None = None
+            leaf_hash: str | None = None
+            if self.anchoring is not None and self.settings.anchor_append_on_ingest:
+                leaf = await self.anchoring.append_evidence(evidence)
+                leaf_index = leaf.leaf_index
+                leaf_hash = leaf.leaf_hash
+
             audit_common = {
                 "principal": principal,
                 "case_id": case.case_id,
@@ -147,6 +160,8 @@ class IngestionService:
                     "key": key,
                     "size": artifact.size,
                     "sha256": artifact.sha256,
+                    "log_leaf_index": leaf_index,
+                    "log_leaf_hash": leaf_hash,
                 },
                 **audit_common,
             )

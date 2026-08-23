@@ -78,6 +78,31 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
 
+    # ---- evidence anchoring (docs/ANCHORING.md) ---------------------------
+    anchor_enabled: bool = True
+    #: local | opentimestamps | evm | file
+    anchor_backend: str = "local"
+    #: Append a Merkle leaf for every ingested evidence object.
+    anchor_append_on_ingest: bool = True
+    #: Periodically anchor the current tree head without an operator asking.
+    anchor_auto: bool = False
+    anchor_interval_seconds: int = 3600
+    anchor_min_new_leaves: int = 1
+    #: Ed25519 signing key. A PEM path (mounted secret) or a base64 32-byte seed.
+    anchor_signing_key_path: str = "./data/keys/log-signing-key.pem"
+    anchor_signing_key_seed: str = ""
+    #: Development convenience: generate a key when none exists. Refused in prod.
+    anchor_allow_key_generation: bool = False
+    anchor_receipt_dir: str = "./data/receipts"
+    #: Comma-separated; empty means the OpenTimestamps defaults.
+    anchor_ots_calendars: str = ""
+    anchor_ots_timeout_seconds: int = 15
+    anchor_evm_rpc_url: str = ""
+    anchor_evm_private_key: str = ""
+    anchor_evm_chain_id: int = 0
+    anchor_evm_contract: str = ""
+    anchor_evm_confirmations: int = 3
+
     # ---- audit -------------------------------------------------------------
     audit_fail_closed: bool = True
     audit_clickhouse_mirror: bool = True
@@ -95,6 +120,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.env in ("staging", "prod")
+
+    @property
+    def ots_calendar_list(self) -> tuple[str, ...]:
+        return tuple(c.strip() for c in self.anchor_ots_calendars.split(",") if c.strip())
 
     @property
     def token_registry(self) -> dict[str, dict[str, Any]]:
@@ -126,6 +155,12 @@ class Settings(BaseSettings):
                 raise ValueError("The in-memory object store is for tests only")
             if not self.audit_fail_closed:
                 raise ValueError("Audit fail-open is refused in staging/prod")
+            if self.anchor_enabled and self.anchor_allow_key_generation:
+                raise ValueError(
+                    "TRACE_ANCHOR_ALLOW_KEY_GENERATION is refused in staging/prod: an "
+                    "ephemeral log signing key makes every tree head unverifiable after "
+                    "a restart. Mount a key instead."
+                )
         return self
 
 

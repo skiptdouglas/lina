@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { Layout } from '@/components/Layout'
 import { Administration } from '@/pages/Administration'
+import { Anchoring } from '@/pages/Anchoring'
 import { CaseDetail } from '@/pages/CaseDetail'
 import { Cases } from '@/pages/Cases'
 import { Dashboard } from '@/pages/Dashboard'
@@ -14,6 +15,7 @@ export function App() {
         <Route index element={<Dashboard />} />
         <Route path="cases" element={<Cases />} />
         <Route path="cases/:caseId" element={<CaseDetail />} />
+        <Route path="anchoring" element={<Anchoring />} />
         <Route path="administration" element={<Administration />} />
 
         {/* Capabilities that arrive in later sprints. */}

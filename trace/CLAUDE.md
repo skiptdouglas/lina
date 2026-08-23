@@ -21,6 +21,8 @@ make test                 # backend tests — no infrastructure needed
 make lint                 # ruff over backend/app and backend/tests
 make frontend-build       # tsc + vite build
 make demo-data            # synthetic telemetry for CASE-DEMO-001
+make signing-key          # Ed25519 key for signing Merkle tree heads
+make verify-proof BUNDLE=proof.json FILE=evidence.log KEY_ID=<id>
 ```
 
 There is no `yarn test` and no jest/vitest suite yet; the UI is verified by
@@ -49,6 +51,18 @@ There is no `yarn test` and no jest/vitest suite yet; the UI is verified by
    never from the request body. A cross-tenant fetch returns 404, not 403.
 6. **No credentials in source.** Secrets come from the environment. Compose
    declares them `${VAR:?...}` so a misconfigured deployment fails loudly.
+7. **Only a Merkle root is ever anchored.** `AnchorBackend.submit` takes
+   `(root_hash, sth)` and nothing else. Never widen that signature — evidence,
+   manifests, case ids and filenames must never reach a ledger (ADR-0007).
+8. **Never overstate what an anchor proves.** Every anchor carries its
+   `independence`; a `local` anchor is self-attested, not blockchain-backed.
+   Proof bundles and the offline verifier always print
+   `what_this_does_not_prove`. Marketing language here is a review defect
+   (ADR-0009).
+9. **Manifests commit immutable fields only.** Adding a mutable field to
+   `COMMITTED_EVIDENCE_FIELDS` would invalidate every previously issued proof
+   the first time it changed. `tests/unit/test_manifest.py` guards both
+   directions.
 
 ## Conventions
 
@@ -62,6 +76,12 @@ There is no `yarn test` and no jest/vitest suite yet; the UI is verified by
 * New API routes need an explicit permission dependency —
   `Depends(require(PERMISSION))`. `tests/unit/test_auth_rbac.py` sweeps the
   OpenAPI schema and fails if a route is reachable unauthenticated.
+* `scripts/verify_anchor.py` and `scripts/generate_signing_key.py` are
+  standalone: no TRACE imports, no third-party dependencies, standard library
+  only. They must stay that way — a third party has to be able to run them on
+  an air-gapped machine. If you change canonical serialization, the Merkle
+  construction or the signature domain, update the verifier in lockstep;
+  `tests/integration/test_offline_verifier.py` runs it as a real subprocess.
 * Record consequential decisions as a new ADR in `docs/adr/`; ADRs are
   immutable, a reversal supersedes.
 * Run `make lint` and `make test` before committing.

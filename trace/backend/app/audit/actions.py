@@ -18,6 +18,10 @@ class AuditAction(StrEnum):
     AI_ACCESS = "AI_ACCESS"
     IDENTITY_REVEAL = "IDENTITY_REVEAL"
     REPORT = "REPORT"
+    # Evidence anchoring (docs/ANCHORING.md)
+    ANCHOR = "ANCHOR"
+    ANCHOR_VERIFY = "ANCHOR_VERIFY"
+    PROOF_EXPORT = "PROOF_EXPORT"
     # Platform lifecycle
     CASE_CREATE = "CASE_CREATE"
     CASE_UPDATE = "CASE_UPDATE"
@@ -34,6 +38,12 @@ class ActorType(StrEnum):
 
 
 #: Actions that are meaningless without a written justification.
+#:
+#: PROOF_EXPORT is deliberately absent. A proof bundle carries no evidence
+#: bytes, and its purpose is independent verification — requiring a written
+#: justification to produce a court exhibit is friction with no security
+#: benefit. It is still audited, because the manifest inside a bundle is
+#: investigation metadata.
 REASON_REQUIRED: frozenset[AuditAction] = frozenset(
     {AuditAction.IDENTITY_REVEAL, AuditAction.EXPORT, AuditAction.DOWNLOAD}
 )

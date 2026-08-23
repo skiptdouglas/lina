@@ -221,6 +221,38 @@ schema. Analytics stores hold **only** pseudonymous identifiers
 
 ---
 
+## 9a. Transparency log and anchors  **[S1]**
+
+Three tables, detailed in [ANCHORING.md](ANCHORING.md).
+
+`merkle_leaves` — one row per log entry. Append-only: no update or delete path
+exists anywhere in the application.
+
+| Field | Notes |
+|---|---|
+| `log_id` | `<tenant>:evidence` or `<tenant>:audit` |
+| `leaf_index` | 0-based, dense, unique per log |
+| `entry_type` | `EVIDENCE_MANIFEST` / `AUDIT_CHECKPOINT` |
+| `entry_hash` | SHA-256 of the canonical entry bytes (display/lookup) |
+| `leaf_hash` | `SHA-256(0x00 || canonical bytes)` — what the tree uses |
+| `entry_json` | The canonical entry, so bundles can be rebuilt years later |
+| `evidence_id` / `case_id` | Back-references |
+
+`anchors` — a signed tree head plus where it was published: `tree_size`,
+`root_hash`, `previous_*`, `sth_json`, `signature`, `key_id`, `public_key`,
+`backend`, `independence`, `status`, `external_ref`, `receipt_b64`.
+
+`ledger_entries` — the local backend's hash chain: `sequence`, `root_hash`,
+`prev_hash`, `entry_hash`.
+
+### Manifest field policy
+
+Only **immutable** evidence fields are committed to a leaf. `legal_hold`,
+`retention_policy`, `parse_status`, `last_verified_*` and `notes` are excluded
+by design: committing them would mean flipping a legal hold invalidates every
+proof issued before the flip. The full table is in
+[ANCHORING.md §4](ANCHORING.md).
+
 ## 10. ID formats
 
 | Kind | Format |
@@ -231,3 +263,4 @@ schema. Analytics stores hold **only** pseudonymous identifiers
 | Entity | `<TYPE>-<zero-padded number>` |
 | Audit | `AUD-<32 hex>` |
 | Detection | `DET-<32 hex>` |
+| Anchor | `ANC-<32 hex>` |

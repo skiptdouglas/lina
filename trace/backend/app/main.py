@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -72,11 +73,92 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001 - analytics is not required for Sprint 1
             logger.error("ClickHouse schema bootstrap failed: %s", exc)
 
+    anchor_task: asyncio.Task | None = None
+    if settings.anchor_enabled and settings.anchor_auto and state.signer is not None:
+        anchor_task = asyncio.create_task(_periodic_anchor(app))
+        logger.info(
+            "Automatic anchoring enabled: every %ss to backend '%s'.",
+            settings.anchor_interval_seconds,
+            settings.anchor_backend,
+        )
+    elif settings.anchor_enabled and state.signer is not None:
+        logger.info(
+            "Evidence anchoring is available (key %s, default backend '%s'); "
+            "anchors are created on demand.",
+            state.signer.key_id,
+            settings.anchor_backend,
+        )
+
     try:
         yield
     finally:
+        if anchor_task is not None:
+            anchor_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await anchor_task
         await state.analytics.close()
         await state.database.dispose()
+
+
+async def _periodic_anchor(app: FastAPI) -> None:
+    """Anchor each tenant's log on a timer.
+
+    Runs as a system principal. Failures are logged and retried on the next
+    tick — a calendar outage must never stop evidence ingestion.
+    """
+    from sqlalchemy import distinct, select  # noqa: PLC0415
+
+    from app.anchoring.models import MerkleLeaf  # noqa: PLC0415
+    from app.anchoring.service import AnchoringService  # noqa: PLC0415
+    from app.audit.service import AuditService  # noqa: PLC0415
+    from app.core.security import Principal, Role  # noqa: PLC0415
+
+    state = app.state.trace
+    settings = state.settings
+
+    while True:
+        await asyncio.sleep(settings.anchor_interval_seconds)
+        try:
+            async with state.database.session_factory() as session:
+                tenants = list(
+                    (await session.execute(select(distinct(MerkleLeaf.tenant_id)))).scalars().all()
+                )
+            for tenant_id in tenants:
+                async with state.database.session_factory() as session:
+                    audit = AuditService(
+                        session,
+                        mirror=state.audit_mirror,
+                        fail_closed=settings.audit_fail_closed,
+                    )
+                    service = AnchoringService(
+                        session,
+                        settings=settings,
+                        signer=state.signer,
+                        backends=state.anchor_backends,
+                        audit=audit,
+                    )
+                    principal = Principal(
+                        subject="system.anchor",
+                        tenant_id=tenant_id,
+                        roles=frozenset({Role.SERVICE}),
+                        display_name="Automatic anchoring",
+                        auth_method="system",
+                    )
+                    status = await service.log_status(principal)
+                    if status.unanchored_entries < settings.anchor_min_new_leaves:
+                        continue
+                    anchor = await service.create_anchor(principal, backend_name=None)
+                    logger.info(
+                        "Anchored %s at tree size %d to %s (%s).",
+                        tenant_id,
+                        anchor.tree_size,
+                        anchor.backend,
+                        anchor.status,
+                    )
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - a tick failing must not kill the loop
+            logger.error("Automatic anchoring tick failed: %s", exc)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:

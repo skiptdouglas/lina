@@ -39,6 +39,10 @@ DETECTION_RUN = "detection:run"
 AI_QUERY = "ai:query"
 IDENTITY_REVEAL = "identity:reveal"
 AUDIT_READ = "audit:read"
+#: Read the transparency log, fetch proof bundles, verify anchors.
+ANCHOR_READ = "anchor:read"
+#: Publish a signed tree head to a ledger (costs money on some backends).
+ANCHOR_CREATE = "anchor:create"
 REPORT_GENERATE = "report:generate"
 ADMIN_MANAGE = "admin:manage"
 
@@ -57,6 +61,8 @@ ALL_PERMISSIONS: frozenset[str] = frozenset(
         AI_QUERY,
         IDENTITY_REVEAL,
         AUDIT_READ,
+        ANCHOR_READ,
+        ANCHOR_CREATE,
         REPORT_GENERATE,
         ADMIN_MANAGE,
     }
@@ -69,7 +75,7 @@ ROLE_PERMISSIONS: dict[Role, frozenset[str]] = {
             CASE_READ, CASE_CREATE, CASE_UPDATE,
             EVIDENCE_READ, EVIDENCE_CREATE, EVIDENCE_VERIFY, EVIDENCE_DOWNLOAD,
             SEARCH_QUERY, DETECTION_RUN, AI_QUERY, IDENTITY_REVEAL,
-            AUDIT_READ, REPORT_GENERATE,
+            AUDIT_READ, ANCHOR_READ, ANCHOR_CREATE, REPORT_GENERATE,
         }
     ),
     Role.INVESTIGATOR: frozenset(
@@ -77,18 +83,26 @@ ROLE_PERMISSIONS: dict[Role, frozenset[str]] = {
             CASE_READ, CASE_CREATE, CASE_UPDATE,
             EVIDENCE_READ, EVIDENCE_CREATE, EVIDENCE_VERIFY, EVIDENCE_DOWNLOAD,
             SEARCH_QUERY, DETECTION_RUN, AI_QUERY, REPORT_GENERATE,
+            ANCHOR_READ,
         }
     ),
     Role.ANALYST: frozenset(
-        {CASE_READ, EVIDENCE_READ, EVIDENCE_VERIFY, SEARCH_QUERY, DETECTION_RUN, AI_QUERY}
+        {
+            CASE_READ, EVIDENCE_READ, EVIDENCE_VERIFY, SEARCH_QUERY,
+            DETECTION_RUN, AI_QUERY, ANCHOR_READ,
+        }
     ),
-    Role.AUDITOR: frozenset({CASE_READ, EVIDENCE_READ, EVIDENCE_VERIFY, AUDIT_READ}),
+    # An auditor's whole job is checking the custody record, so they can read
+    # the log and pull proof bundles — but not spend gas creating anchors.
+    Role.AUDITOR: frozenset(
+        {CASE_READ, EVIDENCE_READ, EVIDENCE_VERIFY, AUDIT_READ, ANCHOR_READ}
+    ),
     Role.VIEWER: frozenset({CASE_READ, EVIDENCE_READ, SEARCH_QUERY}),
     Role.SERVICE: frozenset(
         {
             CASE_READ, CASE_CREATE,
             EVIDENCE_READ, EVIDENCE_CREATE, EVIDENCE_VERIFY,
-            SEARCH_QUERY, DETECTION_RUN,
+            SEARCH_QUERY, DETECTION_RUN, ANCHOR_READ, ANCHOR_CREATE,
         }
     ),
 }

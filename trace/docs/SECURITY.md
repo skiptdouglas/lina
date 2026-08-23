@@ -59,6 +59,8 @@ Roles → permissions (`backend/app/core/security.py`):
 | `ai:query` | ✓ | ✓ | ✓ | ✓ | | | |
 | `identity:reveal` | ✓ | ✓ | | | | | |
 | `audit:read` | ✓ | ✓ | | | ✓ | | |
+| `anchor:read` | ✓ | ✓ | ✓ | ✓ | ✓ | | ✓ |
+| `anchor:create` | ✓ | ✓ | | | | | ✓ |
 | `report:generate` | ✓ | ✓ | ✓ | | | | |
 | `admin:manage` | ✓ | | | | | | |
 
@@ -108,8 +110,32 @@ principal and apply the filter; a cross-tenant fetch returns **404**, not
   fails is rejected. Silent auditing is worse than no auditing.
 * Audit records are never updated or deleted through the API — there is no
   such route.
+* The audit chain head is periodically committed to an anchored transparency
+  log, so tampering stays detectable even when the operator of TRACE is the
+  one tampering (docs/ANCHORING.md).
 
 ---
+
+## 6a. Evidence anchoring
+
+* Only a **32-byte Merkle root** is ever published to a ledger. No evidence,
+  no manifest, no case identifier, no filename (ADR-0007). The
+  `AnchorBackend.submit` signature makes this structural, and a test asserts it.
+* The Ed25519 log signing key is read from a mounted PEM or an environment
+  secret, never from source. `TRACE_ANCHOR_ALLOW_KEY_GENERATION=true` is
+  refused when `TRACE_ENV` is staging or prod — an ephemeral key makes every
+  tree head unverifiable after a restart.
+* Losing the signing key does not invalidate past anchors; leaking it lets
+  someone sign tree heads in your name. Treat it as a code-signing key. A
+  `KmsSigner` interface exists for deployments needing the key out of process;
+  it raises rather than falling back to something weaker.
+* `anchor:create` is separated from `anchor:read` because publishing costs
+  money on some backends. Auditors get read, not create.
+* Each anchor records its **independence**; a `local` anchor is self-attested
+  by TRACE and is never presented as third-party evidence (ADR-0009).
+* Right to erasure remains satisfiable: deleting the evidence and its manifest
+  leaves only a root, which reveals nothing. The proof for that entry stops
+  verifying, which is the correct outcome.
 
 ## 7. AI boundary
 
@@ -159,6 +185,9 @@ Stated plainly rather than implied to be solved:
 | Signed/notarised chain-of-custody (external timestamping) | 7 |
 | Per-tenant encryption keys for pseudonym mappings | 7 |
 | Sandboxed parser workers | 2 |
+| KMS/HSM-backed log signing (interface exists, unimplemented) | 7 |
+| Log signing key rotation workflow | 7 |
+| Bitcoin header validation for OTS receipts (height is read, not chain-checked) | later |
 | Distributed rate limiting and audit chain writer | 5 |
 | Field-level encryption at rest in ClickHouse | later |
 

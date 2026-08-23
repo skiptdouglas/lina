@@ -7,15 +7,21 @@ ingest/verify code paths under test are the production ones.
 
 from __future__ import annotations
 
+import base64
 import json
 from collections.abc import AsyncIterator
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.anchoring.log import reset_root_cache
 from app.core.config import Settings
 from app.evidence.storage import InMemoryObjectStore
 from app.main import create_app
+
+#: Deterministic Ed25519 seed so signatures are reproducible across runs.
+#: A test fixture, not a credential — it signs nothing outside the suite.
+TEST_ONLY_SIGNING_SEED = base64.b64encode(bytes(range(32))).decode("ascii")
 
 ADMIN_TOKEN = "test-token-admin"
 INVESTIGATOR_TOKEN = "test-token-investigator"
@@ -61,7 +67,27 @@ def settings(tmp_path) -> Settings:
         rate_limit_enabled=False,
         evidence_max_upload_bytes=1024 * 1024,
         evidence_verify_on_ingest=True,
+        anchor_enabled=True,
+        anchor_backend="local",
+        anchor_append_on_ingest=True,
+        anchor_auto=False,
+        anchor_signing_key_seed=TEST_ONLY_SIGNING_SEED,
+        anchor_signing_key_path="",
+        anchor_receipt_dir=str(tmp_path / "receipts"),
     )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_root_cache():
+    """The Merkle root cache is process-wide and keyed by (log_id, tree_size).
+
+    That is sound in a deployment — for a given size an append-only log has
+    exactly one root, forever. It is *not* sound across tests, which reuse the
+    same log ids against fresh databases, so it is cleared between them.
+    """
+    reset_root_cache()
+    yield
+    reset_root_cache()
 
 
 @pytest.fixture
@@ -72,6 +98,20 @@ def app(settings: Settings):
 @pytest.fixture
 def object_store(app) -> InMemoryObjectStore:
     return app.state.trace.object_store
+
+
+@pytest.fixture
+async def database(app):
+    """Metadata database with the schema applied, without starting the API.
+
+    Tests that exercise a service or backend directly need the tables but not
+    the whole HTTP stack.
+    """
+    await app.state.trace.database.create_all()
+    try:
+        yield app.state.trace.database
+    finally:
+        await app.state.trace.database.dispose()
 
 
 @pytest.fixture

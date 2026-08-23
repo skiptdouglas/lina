@@ -37,6 +37,22 @@ CAPABILITIES: tuple[Capability, ...] = (
                ("GET /api/v1/evidence/{id}/download",)),
     Capability("audit.chain", "Hash-chained chain of custody", "IMPLEMENTED", 1,
                ("GET /api/v1/audit", "GET /api/v1/audit/verify-chain")),
+    # ---- Sprint 1.5 — evidence anchoring (docs/ANCHORING.md) --------------
+    Capability("anchoring.log", "Merkle transparency log", "IMPLEMENTED", 1,
+               ("GET /api/v1/anchoring/log", "GET /api/v1/anchoring/log/entries",
+                "GET /api/v1/anchoring/consistency"),
+               "RFC 6962 append-only log; one leaf per evidence manifest."),
+    Capability("anchoring.anchor", "Signed tree heads published to a ledger",
+               "IMPLEMENTED", 1,
+               ("POST /api/v1/anchors", "GET /api/v1/anchors",
+                "GET /api/v1/anchors/{id}/verify"),
+               "Ed25519-signed roots anchored to a local ledger, OpenTimestamps, "
+               "an EVM chain, or an exported receipt."),
+    Capability("anchoring.proof", "Offline-verifiable proof bundles", "IMPLEMENTED", 1,
+               ("GET /api/v1/evidence/{id}/proof",
+                "POST /api/v1/anchoring/verify-bundle"),
+               "Self-contained bundles verifiable with scripts/verify_anchor.py, "
+               "without access to TRACE."),
     # ---- Sprint 2 ----------------------------------------------------------
     Capability("ingestion.parse", "Parse queued evidence", "NOT_IMPLEMENTED", 2,
                ("POST /api/v1/ingestion/parse/{evidence_id}",),

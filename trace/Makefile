@@ -11,8 +11,13 @@ help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-init: ## Create .env with generated local secrets (never overwrites an existing one)
+init: ## Create .env and the log signing key (never overwrites existing ones)
 	@$(PY) scripts/init_env.py --root .
+	@if [ ! -f deploy/keys/log-signing-key.pem ]; then \
+	  $(PY) scripts/generate_signing_key.py --out deploy/keys/log-signing-key.pem; \
+	else \
+	  echo "deploy/keys/log-signing-key.pem already exists — leaving it alone."; \
+	fi
 
 up: ## Start the stack (waits for dependencies to become healthy)
 	$(COMPOSE) up -d --build
@@ -56,6 +61,12 @@ frontend-build: ## Typecheck and build the UI
 
 demo-data: ## Generate synthetic telemetry for CASE-DEMO-001 into sample-data/
 	$(PY) scripts/generate_demo_data.py --out sample-data/case-demo-001
+
+signing-key: ## Generate the Ed25519 key that signs Merkle tree heads
+	$(PY) scripts/generate_signing_key.py --out deploy/keys/log-signing-key.pem
+
+verify-proof: ## Verify a proof bundle offline (make verify-proof BUNDLE=proof.json [FILE=evidence.log])
+	@$(PY) scripts/verify_anchor.py $(BUNDLE) $(if $(FILE),--evidence-file $(FILE),) $(if $(KEY_ID),--expect-key-id $(KEY_ID),)
 
 smoke: ## Drive the Sprint 1 workflow against a running stack (needs TRACE_TOKEN)
 	./scripts/smoke_sprint1.sh

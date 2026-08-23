@@ -114,6 +114,44 @@ GET /api/v1/audit                    filter by case/evidence/action/actor   perm
 GET /api/v1/audit/verify-chain       recompute the hash chain              perm audit:read
 ```
 
+### Evidence anchoring
+
+Full design in [ANCHORING.md](ANCHORING.md). Only a 32-byte Merkle root ever
+reaches a ledger (ADR-0007).
+
+```
+GET  /api/v1/anchoring/log                    size, root, last anchor, public key   perm anchor:read
+GET  /api/v1/anchoring/log/entries            recent leaves                         perm anchor:read
+GET  /api/v1/anchoring/backends               usable ledgers + independence         perm anchor:read
+GET  /api/v1/anchoring/consistency?first=&second=   append-only proof               perm anchor:read
+POST /api/v1/anchors                          sign the head and publish it          perm anchor:create
+GET  /api/v1/anchors                          list                                  perm anchor:read
+GET  /api/v1/anchors/{id}                     detail                                perm anchor:read
+POST /api/v1/anchors/{id}/refresh             has it confirmed yet?                 perm anchor:read
+GET  /api/v1/anchors/{id}/verify              recompute root + signature + ledger    perm anchor:read
+GET  /api/v1/anchors/{id}/receipt             raw backend receipt (.ots etc.)       perm anchor:read
+GET  /api/v1/evidence/{id}/proof              offline-verifiable proof bundle       perm anchor:read
+POST /api/v1/anchoring/verify-bundle          re-check a bundle (convenience)       perm anchor:read
+```
+
+`GET /api/v1/evidence/{id}/proof` returns a self-contained bundle — manifest,
+leaf index, audit path, signed tree head, public key, anchor receipt — and
+**no evidence bytes**. Verify it independently:
+
+```bash
+python3 scripts/verify_anchor.py proof.json \
+    --evidence-file sysmon.jsonl --expect-key-id <published key id>
+```
+
+`GET /api/v1/anchors/{id}/verify` reports three checks separately, because
+they fail for different reasons:
+
+```json
+{ "verified": true, "root_recomputed": true, "signature_valid": true,
+  "independence": "PUBLIC_BLOCKCHAIN", "status": "CONFIRMED",
+  "detail": "Root recomputed from the log matches the anchor. Tree-head signature is valid. ..." }
+```
+
 ---
 
 ## Planned — returns 501 today
