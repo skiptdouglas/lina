@@ -1,0 +1,30 @@
+title: Office Application Spawning PowerShell
+id: 3f8b1a52-6c4e-4f2a-9a71-2d4c9c0f1b77
+status: experimental
+description: >
+  A Microsoft Office process creating a PowerShell child process is a common
+  first stage of macro-based intrusions.
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+author: TRACE
+date: 2026/08/23
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    ParentImage|endswith:
+      - '\WINWORD.EXE'
+      - '\EXCEL.EXE'
+      - '\POWERPNT.EXE'
+      - '\OUTLOOK.EXE'
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  condition: selection
+falsepositives:
+  - Legitimate macro-driven reporting workflows
+level: high
+tags:
+  - attack.execution
+  - attack.t1059.001

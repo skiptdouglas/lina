@@ -1,0 +1,57 @@
+# Sequence definitions for the Pattern Hunter (Sprint 5).
+# Steps are normalized event types (docs/DATA_MODEL.md §4).
+
+sequences:
+  - sequence_id: SEQ-0001
+    title: Logon followed by PowerShell and an outbound connection
+    scope: HOST
+    within_minutes: 30
+    steps:
+      - AUTH_LOGON
+      - PROCESS_CREATE:powershell.exe
+      - NETWORK_CONNECT:external
+    severity: HIGH
+    mitre:
+      tactic: Execution
+      technique: T1059
+      subtechnique: T1059.001
+
+  - sequence_id: SEQ-0002
+    title: Office document to script interpreter to payload write
+    scope: PROCESS_TREE
+    within_minutes: 10
+    steps:
+      - PROCESS_CREATE:winword.exe
+      - PROCESS_CREATE:powershell.exe
+      - FILE_CREATE:*.exe
+    severity: CRITICAL
+    mitre:
+      tactic: Initial Access
+      technique: T1566
+      subtechnique: T1566.001
+
+  - sequence_id: SEQ-0003
+    title: Credential access then lateral movement
+    scope: USER
+    within_minutes: 60
+    steps:
+      - PROCESS_ACCESS:lsass.exe
+      - AUTH_LOGON:remote
+      - FILE_SHARE_ACCESS
+    severity: CRITICAL
+    mitre:
+      tactic: Lateral Movement
+      technique: T1021
+      subtechnique: T1021.002
+
+  - sequence_id: SEQ-0004
+    title: Archive staged then transferred externally
+    scope: HOST
+    within_minutes: 120
+    steps:
+      - FILE_CREATE:archive
+      - NETWORK_CONNECT:external
+    severity: HIGH
+    mitre:
+      tactic: Exfiltration
+      technique: T1041

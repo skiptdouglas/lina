@@ -1,0 +1,77 @@
+{
+  "$comment": "Mapping between the TRACE subset and OCSF classes. Informational in Sprint 1; drives export in a later sprint.",
+  "ocsf_version_targeted": "1.3.0",
+  "implemented": "subset",
+  "classes": {
+    "PROCESS_CREATE": {
+      "ocsf_class_uid": 1007,
+      "ocsf_class_name": "Process Activity",
+      "activity": "Launch",
+      "field_map": {
+        "process.pid": "process.pid",
+        "process.name": "process.name",
+        "process.path": "process.file.path",
+        "process.command_line": "process.cmd_line",
+        "process.sha256": "process.file.hashes[?algorithm=='SHA-256'].value",
+        "process.parent_pid": "actor.process.pid",
+        "user.name": "actor.user.name",
+        "device.hostname": "device.hostname"
+      }
+    },
+    "NETWORK_CONNECT": {
+      "ocsf_class_uid": 4001,
+      "ocsf_class_name": "Network Activity",
+      "field_map": {
+        "source.ip": "src_endpoint.ip",
+        "source.port": "src_endpoint.port",
+        "destination.ip": "dst_endpoint.ip",
+        "destination.port": "dst_endpoint.port",
+        "network.protocol": "connection_info.protocol_name",
+        "network.bytes_out": "traffic.bytes_out",
+        "network.bytes_in": "traffic.bytes_in"
+      }
+    },
+    "FILE_CREATE": {
+      "ocsf_class_uid": 1001,
+      "ocsf_class_name": "File System Activity",
+      "activity": "Create",
+      "field_map": {
+        "file.path": "file.path",
+        "file.name": "file.name",
+        "file.sha256": "file.hashes[?algorithm=='SHA-256'].value"
+      }
+    },
+    "AUTH_LOGON": {
+      "ocsf_class_uid": 3002,
+      "ocsf_class_name": "Authentication",
+      "field_map": {
+        "user.name": "user.name",
+        "user.domain": "user.domain",
+        "device.hostname": "device.hostname",
+        "source.ip": "src_endpoint.ip"
+      }
+    },
+    "DNS_QUERY": {
+      "ocsf_class_uid": 4003,
+      "ocsf_class_name": "DNS Activity",
+      "field_map": {
+        "destination.domain": "query.hostname",
+        "source.ip": "src_endpoint.ip"
+      }
+    },
+    "REGISTRY_SET": {
+      "ocsf_class_uid": 201002,
+      "ocsf_class_name": "Registry Value Activity",
+      "activity": "Set",
+      "field_map": {
+        "extra.target_object": "reg_value.path",
+        "extra.details": "reg_value.data"
+      }
+    }
+  },
+  "trace_extensions": {
+    "evidence_id": "Provenance pointer to the evidence object (required)",
+    "raw_reference": "Record locator inside the raw artifact (required)",
+    "clock": "original_timestamp / clock_offset / correction_confidence (brief §17)"
+  }
+}

@@ -1,0 +1,30 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+# The UI lockfile IS committed — reproducible container builds depend on it.
+!package-lock.json
+
+# Local state
+backend/data/
+sample-data/case-demo-001/
+*.db
+*.sqlite3
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

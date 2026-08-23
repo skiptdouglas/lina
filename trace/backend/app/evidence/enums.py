@@ -1,0 +1,48 @@
+"""Evidence vocabulary (docs/DATA_MODEL.md §2)."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+
+
+class SourceType(StrEnum):
+    SYSMON = "SYSMON"
+    WINDOWS_SECURITY = "WINDOWS_SECURITY"
+    WINDOWS_EVTX = "WINDOWS_EVTX"
+    LINUX_JSON = "LINUX_JSON"
+    LINUX_SYSLOG = "LINUX_SYSLOG"
+    ZEEK = "ZEEK"
+    SURICATA = "SURICATA"
+    PCAP = "PCAP"
+    MEMORY_IMAGE = "MEMORY_IMAGE"
+    DISK_IMAGE = "DISK_IMAGE"
+    CLOUD_AUDIT = "CLOUD_AUDIT"
+    EMAIL = "EMAIL"
+    FILE = "FILE"
+    OTHER = "OTHER"
+
+
+class AcquisitionMethod(StrEnum):
+    LIVE_COLLECTION = "LIVE_COLLECTION"
+    DISK_ACQUISITION = "DISK_ACQUISITION"
+    MEMORY_ACQUISITION = "MEMORY_ACQUISITION"
+    LOG_EXPORT = "LOG_EXPORT"
+    API_PULL = "API_PULL"
+    AGENT_STREAM = "AGENT_STREAM"
+    MANUAL_UPLOAD = "MANUAL_UPLOAD"
+
+
+class ParseStatus(StrEnum):
+    PENDING = "PENDING"
+    QUEUED = "QUEUED"
+    PARSING = "PARSING"
+    PARSED = "PARSED"
+    FAILED = "FAILED"
+    UNSUPPORTED = "UNSUPPORTED"
+
+
+class VerificationResult(StrEnum):
+    VERIFIED = "VERIFIED"
+    MISMATCH = "MISMATCH"
+    MISSING = "MISSING"
+    ERROR = "ERROR"

@@ -1,0 +1,68 @@
+<!--
+  Baseline Sysmon configuration for TRACE.
+  Deliberately close to stock: exclusions hide evidence, and an exclusion an
+  attacker can predict is an exclusion an attacker will use. Tune per estate,
+  and record what was excluded so evidence-gap detection can account for it.
+-->
+<Sysmon schemaversion="4.90">
+  <HashAlgorithms>SHA256</HashAlgorithms>
+  <CheckRevocation>False</CheckRevocation>
+
+  <EventFiltering>
+    <!-- 1: Process creation -->
+    <RuleGroup name="process-create" groupRelation="or">
+      <ProcessCreate onmatch="exclude" />
+    </RuleGroup>
+
+    <!-- 3: Network connection -->
+    <RuleGroup name="network-connect" groupRelation="or">
+      <NetworkConnect onmatch="exclude">
+        <Image condition="is">C:\Windows\System32\svchost.exe</Image>
+      </NetworkConnect>
+    </RuleGroup>
+
+    <!-- 7: Image loaded — noisy; scope to unsigned and temp paths -->
+    <RuleGroup name="image-load" groupRelation="or">
+      <ImageLoad onmatch="include">
+        <Signed condition="is">false</Signed>
+        <ImageLoaded condition="contains">\AppData\</ImageLoaded>
+        <ImageLoaded condition="contains">\Temp\</ImageLoaded>
+      </ImageLoad>
+    </RuleGroup>
+
+    <!-- 10: Process access — credential access -->
+    <RuleGroup name="process-access" groupRelation="or">
+      <ProcessAccess onmatch="include">
+        <TargetImage condition="end with">\lsass.exe</TargetImage>
+      </ProcessAccess>
+    </RuleGroup>
+
+    <!-- 11: File create -->
+    <RuleGroup name="file-create" groupRelation="or">
+      <FileCreate onmatch="include">
+        <TargetFilename condition="end with">.exe</TargetFilename>
+        <TargetFilename condition="end with">.dll</TargetFilename>
+        <TargetFilename condition="end with">.ps1</TargetFilename>
+        <TargetFilename condition="end with">.7z</TargetFilename>
+        <TargetFilename condition="end with">.zip</TargetFilename>
+        <TargetFilename condition="contains">\Startup\</TargetFilename>
+      </FileCreate>
+    </RuleGroup>
+
+    <!-- 13: Registry value set — persistence -->
+    <RuleGroup name="registry-set" groupRelation="or">
+      <RegistryEvent onmatch="include">
+        <TargetObject condition="contains">\CurrentVersion\Run</TargetObject>
+        <TargetObject condition="contains">\Services\</TargetObject>
+        <TargetObject condition="contains">\Winlogon\</TargetObject>
+      </RegistryEvent>
+    </RuleGroup>
+
+    <!-- 22: DNS query -->
+    <RuleGroup name="dns-query" groupRelation="or">
+      <DnsQuery onmatch="exclude">
+        <QueryName condition="end with">.in-addr.arpa</QueryName>
+      </DnsQuery>
+    </RuleGroup>
+  </EventFiltering>
+</Sysmon>

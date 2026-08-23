@@ -1,0 +1,31 @@
+title: LSASS Process Access With Credential Dumping Rights
+id: 7c2e4a91-0b6d-4e3f-8a12-5f9c3d1e7b04
+status: experimental
+description: >
+  A non-system process requesting a handle to lsass.exe with read/query rights,
+  the access pattern used by credential dumping tools.
+references:
+  - https://attack.mitre.org/techniques/T1003/001/
+author: TRACE
+date: 2026/08/23
+logsource:
+  category: process_access
+  product: windows
+detection:
+  selection:
+    TargetImage|endswith: '\lsass.exe'
+    GrantedAccess:
+      - '0x1010'
+      - '0x1410'
+      - '0x143a'
+  filter_known_good:
+    SourceImage|endswith:
+      - '\MsMpEng.exe'
+      - '\wmiprvse.exe'
+  condition: selection and not filter_known_good
+falsepositives:
+  - Endpoint protection and backup agents
+level: critical
+tags:
+  - attack.credential_access
+  - attack.t1003.001
