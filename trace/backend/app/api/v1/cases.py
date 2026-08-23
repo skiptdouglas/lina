@@ -107,15 +107,6 @@ async def update_case(
     return await _to_read(case, service)
 
 
-@router.get("/{case_id}/timeline")
-async def case_timeline(
-    case_id: str,
-    principal: Annotated[Principal, Depends(require(CASE_READ))],
-) -> None:
-    """Chronological reconstruction — requires normalized events (Sprint 2)."""
-    raise not_implemented("timeline.case")
-
-
 @router.get("/{case_id}/evidence-gaps")
 async def case_evidence_gaps(
     case_id: str,

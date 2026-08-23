@@ -89,6 +89,12 @@ EXCLUDED_EVIDENCE_FIELDS: tuple[str, ...] = (
     "last_verification_result",
     "notes",
     "mime_type_source",
+    # A measurement of the source machine's clock, revisable when a better
+    # one arrives. The original timestamps it applies to are committed; the
+    # correction applied to them is analysis (docs/ANCHORING.md §4).
+    "clock_offset_seconds",
+    "clock_offset_confidence",
+    "clock_offset_method",
 )
 
 

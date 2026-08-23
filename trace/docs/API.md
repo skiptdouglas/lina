@@ -114,6 +114,49 @@ GET /api/v1/audit                    filter by case/evidence/action/actor   perm
 GET /api/v1/audit/verify-chain       recompute the hash chain              perm audit:read
 ```
 
+### Normalization, search and timeline
+
+Design in [NORMALIZATION.md](NORMALIZATION.md).
+
+```
+GET  /api/v1/ingestion/parsers                which formats and record types   perm evidence:create
+POST /api/v1/ingestion/parse/{evidence_id}    parse stored evidence            perm evidence:create
+POST /api/v1/search                           search normalized events         perm search:query
+GET  /api/v1/events/{event_id}                one event                        perm search:query
+GET  /api/v1/cases/{case_id}/timeline         chronological reconstruction     perm case:read
+GET  /api/v1/evidence/{id}/record?reference=  the original bytes of a record   perm evidence:read
+```
+
+`POST /api/v1/ingestion/parse/{id}` reports what it did **and did not** do:
+
+```json
+{ "parse_status": "PARSED", "parser_id": "sysmon-json",
+  "events_produced": 13, "records_read": 13, "records_skipped": 0,
+  "unrecognised": 4, "unrecognised_types": {"EventID 15": 4},
+  "truncated": false, "errors": [], "detail": "…" }
+```
+
+Re-parsing needs `{"force": true}` and **replaces** the artifact's events rather
+than appending, so a corrected clock offset cannot double a timeline.
+
+`POST /api/v1/search` always reports which backend answered and what it can
+express, so "no results" is never ambiguous:
+
+```json
+{ "events": [...], "total": 3, "took_ms": 4,
+  "backend": {"name": "sql", "fuzzy": false, "full_text": true,
+              "notes": "Substring matching over indexed columns. No fuzzy…"} }
+```
+
+`GET /api/v1/cases/{id}/timeline` returns entries carrying both timestamps, a
+`clock_corrected` flag, and a `provenance` block linking to the original record.
+
+`GET /api/v1/evidence/{id}/record?reference=jsonl:12:4096:312` range-reads the
+stored object and returns exactly those bytes — the last hop of the "SHOW
+EVIDENCE" chain. The locator is validated, bounded by the object size, and
+capped by `TRACE_RECORD_MAX_BYTES`; it is a provenance pointer, not a read
+primitive.
+
 ### Evidence anchoring
 
 Full design in [ANCHORING.md](ANCHORING.md). Only a 32-byte Merkle root ever
@@ -158,9 +201,6 @@ they fail for different reasons:
 
 | Endpoint | Sprint |
 |---|---|
-| `POST /api/v1/search` | 2 |
-| `GET  /api/v1/cases/{case_id}/timeline` | 2 |
-| `POST /api/v1/ingestion/parse/{evidence_id}` | 2 |
 | `GET  /api/v1/entities`, `GET /api/v1/entities/{id}` | 3 |
 | `GET  /api/v1/graph/neighbourhood` | 3 |
 | `POST /api/v1/detections/sigma/run` | 4 |

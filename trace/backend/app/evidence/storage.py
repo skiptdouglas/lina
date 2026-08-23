@@ -68,6 +68,23 @@ class ObjectStore(ABC):
         """Yield the object's bytes. Raises :class:`ObjectNotFound`."""
 
     @abstractmethod
+    def stream_range(
+        self,
+        bucket: str,
+        key: str,
+        *,
+        offset: int,
+        length: int,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+    ) -> AsyncIterator[bytes]:
+        """Yield ``length`` bytes starting at ``offset``.
+
+        This is what turns a normalized event's ``raw_reference`` back into the
+        original record without downloading the whole artifact — the last link
+        of the "SHOW EVIDENCE" chain (brief §57).
+        """
+
+    @abstractmethod
     async def delete(self, bucket: str, key: str) -> None: ...
 
 
@@ -186,6 +203,38 @@ class MinioObjectStore(ObjectStore):
             await asyncio.to_thread(response.close)
             await asyncio.to_thread(response.release_conn)
 
+    async def stream_range(
+        self,
+        bucket: str,
+        key: str,
+        *,
+        offset: int,
+        length: int,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+    ) -> AsyncIterator[bytes]:
+        if length <= 0:
+            return
+        client = self._get_client()
+        try:
+            response = await asyncio.to_thread(
+                client.get_object, bucket, key, offset=offset, length=length
+            )
+        except Exception as exc:  # noqa: BLE001 - mapped to a domain error below
+            if self._is_missing(exc):
+                raise ObjectNotFound(f"{bucket}/{key}") from exc
+            raise
+        try:
+            remaining = length
+            while remaining > 0:
+                chunk = await asyncio.to_thread(response.read, min(chunk_size, remaining))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+                yield chunk
+        finally:
+            await asyncio.to_thread(response.close)
+            await asyncio.to_thread(response.release_conn)
+
     async def delete(self, bucket: str, key: str) -> None:
         client = self._get_client()
         await asyncio.to_thread(client.remove_object, bucket, key)
@@ -247,6 +296,23 @@ class InMemoryObjectStore(ObjectStore):
         data = self._objects[(bucket, key)]
         for offset in range(0, len(data), chunk_size):
             yield data[offset : offset + chunk_size]
+
+    async def stream_range(
+        self,
+        bucket: str,
+        key: str,
+        *,
+        offset: int,
+        length: int,
+        chunk_size: int = DEFAULT_CHUNK_SIZE,
+    ) -> AsyncIterator[bytes]:
+        if (bucket, key) not in self._objects:
+            raise ObjectNotFound(f"{bucket}/{key}")
+        if length <= 0:
+            return
+        segment = self._objects[(bucket, key)][offset : offset + length]
+        for start in range(0, len(segment), chunk_size):
+            yield segment[start : start + chunk_size]
 
     async def delete(self, bucket: str, key: str) -> None:
         self._objects.pop((bucket, key), None)

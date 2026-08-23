@@ -19,8 +19,13 @@ import type {
   LogEntryRow,
   LogStatus,
   Paged,
+  ParseReport,
+  ParserInfo,
   ProofBundle,
   Readiness,
+  SearchRequest,
+  SearchResponse,
+  TimelineResponse,
   Verification,
 } from './types'
 
@@ -119,6 +124,43 @@ export const api = {
   /** Download URL — the reason is recorded in the chain of custody. */
   downloadUrl: (evidenceId: string, reason: string) =>
     `${BASE_URL}/evidence/${encodeURIComponent(evidenceId)}/download?reason=${encodeURIComponent(reason)}`,
+
+  // ---- normalization, search and timeline ----
+  parseEvidence: (evidenceId: string, force = false) =>
+    request<ParseReport>(`/ingestion/parse/${encodeURIComponent(evidenceId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ force }),
+    }),
+  listParsers: () => request<{ items: ParserInfo[] }>('/ingestion/parsers'),
+  search: (payload: SearchRequest) =>
+    request<SearchResponse>('/search', { method: 'POST', body: JSON.stringify(payload) }),
+  timeline: (caseId: string, params: Record<string, string> = {}) => {
+    const search = new URLSearchParams(params)
+    const suffix = search.toString()
+    return request<TimelineResponse>(
+      `/cases/${encodeURIComponent(caseId)}/timeline${suffix ? `?${suffix}` : ''}`,
+    )
+  },
+  /** The exact original bytes an event came from. */
+  rawRecord: async (evidenceId: string, reference: string): Promise<string> => {
+    const token = getToken()
+    const response = await fetch(
+      `${BASE_URL}/evidence/${encodeURIComponent(evidenceId)}/record` +
+        `?reference=${encodeURIComponent(reference)}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    )
+    const text = await response.text()
+    if (!response.ok) {
+      let detail = response.statusText
+      try {
+        detail = (JSON.parse(text) as { detail?: string }).detail ?? detail
+      } catch {
+        /* non-JSON error body */
+      }
+      throw new ApiError(response.status, 'ERROR', detail)
+    }
+    return text
+  },
 
   // ---- anchoring (docs/ANCHORING.md) ----
   logStatus: () => request<LogStatus>('/anchoring/log'),

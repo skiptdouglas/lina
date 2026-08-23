@@ -74,6 +74,11 @@ def settings(tmp_path) -> Settings:
         anchor_signing_key_seed=TEST_ONLY_SIGNING_SEED,
         anchor_signing_key_path="",
         anchor_receipt_dir=str(tmp_path / "receipts"),
+        # Tests parse explicitly. A background worker racing the assertions
+        # would make them flaky and hide the ordering being tested.
+        parse_on_ingest=False,
+        event_store="sql",
+        search_backend="sql",
     )
 
 

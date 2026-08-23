@@ -23,8 +23,14 @@ from app.core.clickhouse import ClickHouseAnalyticsStore
 from app.core.config import Settings
 from app.core.db import Database
 from app.core.security import Authenticator, build_authenticator
+from app.events.clickhouse_store import ClickHouseEventStore
+from app.events.sql_store import SqlEventStore
+from app.events.store import EventStore
 from app.evidence.storage import InMemoryObjectStore, MinioObjectStore, ObjectStore
 from app.ingestion.queue import IngestionQueue, InMemoryIngestionQueue
+from app.search.backend import SearchBackend
+from app.search.opensearch_backend import OpenSearchBackend
+from app.search.sql_backend import SqlSearchBackend
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +47,8 @@ class AppState:
     #: None when anchoring is disabled or no signing key could be resolved.
     signer: Signer | None
     anchor_backends: dict[str, AnchorBackend]
+    events: EventStore
+    search: SearchBackend
 
 
 def build_object_store(settings: Settings) -> ObjectStore:
@@ -123,6 +131,38 @@ def build_anchor_backends(settings: Settings) -> dict[str, AnchorBackend]:
     return backends
 
 
+def build_event_store(
+    settings: Settings, analytics: AnalyticsStore, database: Database
+) -> EventStore:
+    """Pick the event store.
+
+    ClickHouse is the production path (ADR-0002). The SQL store is selected
+    explicitly — it is a real implementation, not a stub, and is what small
+    deployments and the test-suite use.
+    """
+    if settings.event_store == "sql" or not settings.clickhouse_enabled:
+        return SqlEventStore(database.session_factory)
+    return ClickHouseEventStore(analytics)
+
+
+def build_search_backend(settings: Settings, events: EventStore) -> SearchBackend:
+    """Pick the search backend.
+
+    Defaults to serving search from the event store, which is always correct
+    and always consistent. OpenSearch is opt-in because an index that can drift
+    from the record is a liability unless someone chose it deliberately.
+    """
+    if settings.search_backend == "opensearch":
+        return OpenSearchBackend(
+            url=settings.opensearch_url,
+            index=settings.opensearch_index,
+            username=settings.opensearch_username,
+            password=settings.opensearch_password,
+            verify_certs=settings.opensearch_verify_certs,
+        )
+    return SqlSearchBackend(events)
+
+
 def build_state(settings: Settings) -> AppState:
     analytics = build_analytics(settings)
     mirror: AuditMirror = (
@@ -131,6 +171,7 @@ def build_state(settings: Settings) -> AppState:
         else NullAuditMirror()
     )
     database = Database(settings.database_url, echo=settings.database_echo)
+    events = build_event_store(settings, analytics, database)
     return AppState(
         settings=settings,
         database=database,
@@ -141,4 +182,6 @@ def build_state(settings: Settings) -> AppState:
         queue=InMemoryIngestionQueue(),
         signer=build_signer(settings),
         anchor_backends=build_anchor_backends(settings),
+        events=events,
+        search=build_search_backend(settings, events),
     )

@@ -7,6 +7,8 @@ import { CaseDetail } from '@/pages/CaseDetail'
 import { Cases } from '@/pages/Cases'
 import { Dashboard } from '@/pages/Dashboard'
 import { Pending } from '@/pages/Pending'
+import { Search } from '@/pages/Search'
+import { Timeline } from '@/pages/Timeline'
 
 export function App() {
   return (
@@ -18,15 +20,16 @@ export function App() {
         <Route path="anchoring" element={<Anchoring />} />
         <Route path="administration" element={<Administration />} />
 
+        <Route path="search" element={<Search />} />
+        <Route path="timeline" element={<Timeline />} />
+
         {/* Capabilities that arrive in later sprints. */}
-        <Route path="search" element={<Pending feature="search.query" title="Search" />} />
         <Route
           path="patterns"
           element={<Pending feature="patterns.find_similar" title="Pattern Hunter" />}
         />
         <Route path="entities" element={<Pending feature="entities.registry" title="Entities" />} />
         <Route path="graph" element={<Pending feature="graph.neighbourhood" title="Graph" />} />
-        <Route path="timeline" element={<Pending feature="timeline.case" title="Timeline" />} />
         <Route
           path="detections"
           element={<Pending feature="detections.sigma" title="Detections" />}

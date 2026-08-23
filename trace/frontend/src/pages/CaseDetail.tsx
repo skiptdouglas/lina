@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { Link } from 'react-router-dom'
+
 import { api, ApiError } from '@/api/client'
 import { Pill } from '@/components/Pill'
 import { ProofPanel } from '@/components/ProofPanel'
 import { useAsync } from '@/hooks/useAsync'
-import type { AuditRecord, Case, Evidence, Paged, Verification } from '@/api/types'
+import type { AuditRecord, Case, Evidence, Paged, ParseReport, Verification } from '@/api/types'
 
 const SOURCE_TYPES = [
   'SYSMON',
@@ -63,6 +65,9 @@ export function CaseDetail() {
           <p className="subtitle">{detail?.description || 'No description recorded.'}</p>
         </div>
         <div className="row">
+          <Link className="btn small" to={`/timeline?case=${caseId}`}>
+            View timeline
+          </Link>
           <Pill value={detail?.severity} />
           <Pill value={detail?.status} />
         </div>
@@ -249,6 +254,8 @@ function EvidenceTable({
   onVerified: () => void
 }) {
   const [verifications, setVerifications] = useState<Record<string, Verification>>({})
+  const [reports, setReports] = useState<Record<string, ParseReport>>({})
+  const [parseError, setParseError] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
   const verify = async (evidenceId: string) => {
@@ -262,6 +269,20 @@ function EvidenceTable({
     }
   }
 
+  const parse = async (evidenceId: string, force: boolean) => {
+    setBusy(evidenceId)
+    setParseError(null)
+    try {
+      const result = await api.parseEvidence(evidenceId, force)
+      setReports((current) => ({ ...current, [evidenceId]: result }))
+      onVerified()
+    } catch (caught) {
+      setParseError((caught as ApiError).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return (
     <div className="card">
       <header>
@@ -269,6 +290,11 @@ function EvidenceTable({
         <span className="muted">{evidence.length} object(s)</span>
       </header>
       <div className="body flush">
+        {parseError ? (
+          <div className="notice danger" style={{ margin: 16 }}>
+            {parseError}
+          </div>
+        ) : null}
         {loading && evidence.length === 0 ? <div className="empty">Loading…</div> : null}
         {!loading && evidence.length === 0 ? (
           <div className="empty">No evidence uploaded to this case yet.</div>
@@ -300,6 +326,13 @@ function EvidenceTable({
                     onClick={() => verify(item.evidence_id)}
                   >
                     {busy === item.evidence_id ? 'Verifying…' : 'Verify evidence'}
+                  </button>
+                  <button
+                    className="small"
+                    disabled={busy === item.evidence_id}
+                    onClick={() => parse(item.evidence_id, item.parse_status === 'PARSED')}
+                  >
+                    {item.parse_status === 'PARSED' ? 'Re-parse' : 'Parse'}
                   </button>
                   <ProofPanel evidenceId={item.evidence_id} sha256={item.sha256} />
                 </div>
@@ -339,7 +372,25 @@ function EvidenceTable({
                 </div>
               ) : null}
 
-              {item.parse_detail ? (
+              {reports[item.evidence_id] ? (
+                <div
+                  className={`notice ${reports[item.evidence_id].events_produced > 0 ? 'verified' : 'warn'}`}
+                  style={{ marginTop: 10, marginBottom: 0 }}
+                >
+                  <h3>
+                    {reports[item.evidence_id].parse_status} —{' '}
+                    {reports[item.evidence_id].events_produced} event(s) from{' '}
+                    {reports[item.evidence_id].records_read} record(s)
+                  </h3>
+                  <p>{reports[item.evidence_id].detail}</p>
+                  {reports[item.evidence_id].unrecognised > 0 ? (
+                    <p style={{ marginTop: 6 }}>
+                      {reports[item.evidence_id].unrecognised} record(s) were read but not
+                      mapped. What TRACE did not understand is reported, not hidden.
+                    </p>
+                  ) : null}
+                </div>
+              ) : item.parse_detail ? (
                 <div className="muted" style={{ fontSize: 12, marginTop: 6 }}>
                   {item.parse_detail}
                 </div>

@@ -116,6 +116,27 @@ principal and apply the filter; a cross-tenant fetch returns **404**, not
 
 ---
 
+## 5a. Parsing untrusted evidence
+
+Evidence is attacker-influenced by definition — it came from a compromised
+machine — so parsing treats every artifact as hostile input.
+
+* Reads are **constant memory and bounded** on four axes: total records, total
+  bytes, single-record bytes, and the size of a served raw record. Exceeding a
+  limit truncates and **says so** in the parse report; silent truncation would
+  read as "that's all there was".
+* Malformed records are counted and skipped, never fatal. One corrupt line in a
+  recovered log must not cost the other 400,000.
+* Parsers never execute, expand or render content. No archive extraction, no
+  templating, no dynamic dispatch on attacker-controlled field values.
+* Raw records are served `application/octet-stream` with `nosniff`. Content
+  from a compromised machine is not trusted markup.
+* Record locators are validated against a strict grammar, refused past the end
+  of the object, and size-capped — a provenance pointer, not an arbitrary read.
+* Parsing runs **in-process** today. Limits bound the damage from a parser bug
+  but do not isolate it; sandboxed worker containers are the follow-up and are
+  listed in the gaps below rather than implied to be done.
+
 ## 6a. Evidence anchoring
 
 * Only a **32-byte Merkle root** is ever published to a ledger. No evidence,
@@ -184,7 +205,7 @@ Stated plainly rather than implied to be solved:
 | Object-lock (WORM) + versioning enforced on the MinIO bucket | 2 |
 | Signed/notarised chain-of-custody (external timestamping) | 7 |
 | Per-tenant encryption keys for pseudonym mappings | 7 |
-| Sandboxed parser workers | 2 |
+| Sandboxed parser workers (parsing is in-process; limits bound but do not isolate) | later |
 | KMS/HSM-backed log signing (interface exists, unimplemented) | 7 |
 | Log signing key rotation workflow | 7 |
 | Bitcoin header validation for OTS receipts (height is read, not chain-checked) | later |

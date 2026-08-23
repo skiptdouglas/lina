@@ -78,6 +78,24 @@ class Settings(BaseSettings):
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "llama3.1:8b"
 
+    # ---- parsing / normalization ------------------------------------------
+    #: Parse automatically once evidence is ingested.
+    parse_on_ingest: bool = True
+    #: Bounds applied while reading attacker-influenced evidence.
+    parse_max_records: int = 5_000_000
+    parse_max_bytes: int = 8 * 1024**3
+    parse_max_record_bytes: int = 8 * 1024**2
+    #: Largest single raw record served by GET /evidence/{id}/record.
+    record_max_bytes: int = 4 * 1024**2
+    #: Event storage: sql | clickhouse
+    event_store: str = "clickhouse"
+    #: Search: sql | opensearch
+    search_backend: str = "sql"
+    opensearch_index: str = "trace-events"
+    opensearch_verify_certs: bool = True
+    opensearch_username: str = ""
+    opensearch_password: str = ""
+
     # ---- evidence anchoring (docs/ANCHORING.md) ---------------------------
     anchor_enabled: bool = True
     #: local | opentimestamps | evm | file

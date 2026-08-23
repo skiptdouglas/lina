@@ -53,19 +53,26 @@ CAPABILITIES: tuple[Capability, ...] = (
                 "POST /api/v1/anchoring/verify-bundle"),
                "Self-contained bundles verifiable with scripts/verify_anchor.py, "
                "without access to TRACE."),
-    # ---- Sprint 2 ----------------------------------------------------------
-    Capability("ingestion.parse", "Parse queued evidence", "NOT_IMPLEMENTED", 2,
-               ("POST /api/v1/ingestion/parse/{evidence_id}",),
-               "Parser workers are not implemented; evidence stays in parse_status=QUEUED."),
+    # ---- Sprint 2 (implemented) --------------------------------------------
+    Capability("ingestion.parse", "Parse stored evidence", "IMPLEMENTED", 2,
+               ("POST /api/v1/ingestion/parse/{evidence_id}",
+                "GET /api/v1/ingestion/parsers"),
+               "Reads a fresh copy from object storage; re-parsing replaces "
+               "rather than duplicates an artifact's events."),
     Capability("normalization.parsers", "Sysmon/Windows/Linux/Zeek/Suricata parsers",
-               "NOT_IMPLEMENTED", 2, (),
-               "Parser plugin interfaces exist; no parser produces events yet."),
-    Capability("search.query", "Event search", "NOT_IMPLEMENTED", 2,
-               ("POST /api/v1/search",),
-               "OpenSearch indexing lands with normalization in Sprint 2."),
-    Capability("timeline.case", "Case timeline", "NOT_IMPLEMENTED", 2,
+               "IMPLEMENTED", 2, (),
+               "Sysmon events 1, 3, 7, 10, 11, 13, 22; Windows Security; Zeek "
+               "conn/dns/http/ssl/files; Suricata EVE; generic Linux JSON."),
+    Capability("normalization.provenance", "Byte-accurate record locators",
+               "IMPLEMENTED", 2, ("GET /api/v1/evidence/{id}/record",),
+               "Every event addresses the exact bytes it came from."),
+    Capability("search.query", "Event search", "IMPLEMENTED", 2,
+               ("POST /api/v1/search", "GET /api/v1/events/{event_id}"),
+               "Served from the event store by default; OpenSearch adds fuzzy "
+               "matching and relevance ranking when configured."),
+    Capability("timeline.case", "Case timeline", "IMPLEMENTED", 2,
                ("GET /api/v1/cases/{case_id}/timeline",),
-               "Requires normalized events."),
+               "Clock-corrected ordering with the original timestamps preserved."),
     # ---- Sprint 3 ----------------------------------------------------------
     Capability("entities.registry", "Canonical entities", "NOT_IMPLEMENTED", 3,
                ("GET /api/v1/entities", "GET /api/v1/entities/{id}")),

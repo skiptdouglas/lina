@@ -116,6 +116,9 @@ class IngestionService:
                 retention_policy=metadata.retention_policy,
                 legal_hold=metadata.legal_hold,
                 parse_status=ParseStatus.PENDING,
+                clock_offset_seconds=metadata.clock_offset_seconds,
+                clock_offset_confidence=metadata.clock_offset_confidence,
+                clock_offset_method=metadata.clock_offset_method,
                 notes=metadata.notes,
                 created_at=utcnow(),
             )
@@ -180,8 +183,8 @@ class IngestionService:
 
             evidence.parse_status = ParseStatus.QUEUED
             evidence.parse_detail = (
-                "Queued. Parser workers are not implemented yet (Sprint 2); "
-                "no events have been produced from this artifact."
+                "Queued for parsing. The artifact is stored and verifiable; no events "
+                "have been produced from it yet."
             )
             await self.session.commit()
         except BaseException:

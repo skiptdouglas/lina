@@ -26,6 +26,11 @@ class EvidenceIngestMetadata(BaseModel):
     retention_policy: str = Field(default="default-365d", max_length=64)
     legal_hold: bool = False
     notes: str | None = Field(default=None, max_length=20000)
+    #: Clock skew the collector measured on the source, in seconds. Applied to
+    #: this artifact's events; the original timestamps are never overwritten.
+    clock_offset_seconds: float | None = None
+    clock_offset_confidence: float | None = Field(default=None, ge=0.0, le=1.0)
+    clock_offset_method: str | None = Field(default=None, max_length=32)
 
 
 class EvidenceRead(BaseModel):
@@ -51,6 +56,9 @@ class EvidenceRead(BaseModel):
     legal_hold: bool
     parse_status: ParseStatus
     parse_detail: str | None
+    clock_offset_seconds: float | None
+    clock_offset_confidence: float | None
+    clock_offset_method: str | None
     last_verified_at: datetime | None
     last_verification_result: VerificationResult | None
     notes: str | None

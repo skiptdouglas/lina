@@ -12,7 +12,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class EventCategory(StrEnum):
@@ -28,7 +28,25 @@ class EventCategory(StrEnum):
     OTHER = "OTHER"
 
 
-class UserRef(BaseModel):
+class _EventModel(BaseModel):
+    """Base that normalises empty strings to ``None``.
+
+    Storage backends represent an absent string as ``""`` (ClickHouse String
+    columns are not nullable, and making them so costs index efficiency for no
+    forensic benefit). That is only lossless if ``""`` can never be a
+    *meaningful* value — so it is normalised away here, at the model, rather
+    than left to each parser to remember.
+    """
+
+    @model_validator(mode="after")
+    def _blank_strings_are_absent(self):  # noqa: ANN202
+        for name, value in list(self.__dict__.items()):
+            if isinstance(value, str) and not value.strip():
+                setattr(self, name, None)
+        return self
+
+
+class UserRef(_EventModel):
     name: str | None = None
     domain: str | None = None
     sid: str | None = None
@@ -36,21 +54,21 @@ class UserRef(BaseModel):
     entity_id: str | None = None
 
 
-class DeviceRef(BaseModel):
+class DeviceRef(_EventModel):
     hostname: str | None = None
     ip: list[str] = []
     os: str | None = None
     entity_id: str | None = None
 
 
-class NetworkEndpoint(BaseModel):
+class NetworkEndpoint(_EventModel):
     ip: str | None = None
     port: int | None = None
     domain: str | None = None
     geo_country: str | None = None
 
 
-class ProcessRef(BaseModel):
+class ProcessRef(_EventModel):
     pid: int | None = None
     guid: str | None = None
     name: str | None = None
@@ -63,7 +81,7 @@ class ProcessRef(BaseModel):
     integrity_level: str | None = None
 
 
-class FileRef(BaseModel):
+class FileRef(_EventModel):
     name: str | None = None
     path: str | None = None
     sha256: str | None = None
@@ -71,7 +89,7 @@ class FileRef(BaseModel):
     size: int | None = None
 
 
-class NetworkRef(BaseModel):
+class NetworkRef(_EventModel):
     protocol: str | None = None
     direction: str | None = None
     bytes_in: int | None = None

@@ -32,6 +32,10 @@ class IngestionQueue(ABC):
     async def enqueue(self, job: ParseJob) -> None: ...
 
     @abstractmethod
+    async def dequeue(self) -> ParseJob | None:
+        """Take the next job, or ``None`` when the queue is empty."""
+
+    @abstractmethod
     async def depth(self) -> int: ...
 
 
@@ -51,6 +55,9 @@ class InMemoryIngestionQueue(IngestionQueue):
     async def enqueue(self, job: ParseJob) -> None:
         self._jobs.append(job)
         logger.info("Queued parse job for %s (%s)", job.evidence_id, job.source_type)
+
+    async def dequeue(self) -> ParseJob | None:
+        return self._jobs.popleft() if self._jobs else None
 
     async def depth(self) -> int:
         return len(self._jobs)

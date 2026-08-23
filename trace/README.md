@@ -10,7 +10,7 @@ open-source forensic investigation platform.
 
 ---
 
-## Status: Sprint 1 of 7
+## Status: Sprints 1–2 of 7
 
 TRACE is built vertically — each sprint ends with something an investigator can
 use end to end. **Sprint 1 (evidence foundation) is implemented and tested.**
@@ -23,15 +23,20 @@ Working today:
   **round-trip verified before the metadata row is committed**
 * Integrity verification on demand, including tamper and missing-object detection
 * Hash-chained chain of custody with an integrity check of its own
+* **Normalization** — parsers for Sysmon, Windows Security, Zeek, Suricata and
+  Linux JSON, producing OCSF-inspired events that each address the exact bytes
+  they came from ([docs/NORMALIZATION.md](docs/NORMALIZATION.md))
+* **Search and timeline** — query across every parsed source, reconstruct a case
+  chronologically, and click any event through to its original record
 * **Evidence anchoring** — an RFC 6962 Merkle log of evidence manifests, signed
   tree heads, and roots published to an immutable ledger
   ([docs/ANCHORING.md](docs/ANCHORING.md))
 * RBAC, tenant isolation, rate limiting, audited downloads
 * `GET /api/v1/capabilities` — a machine-readable map of what is and is not built
 
-Not built yet: parsing, search, entities, graph, detections, Pattern Hunter,
-anomalies, AI investigation, reporting, threat intel, pseudonymisation. Those
-endpoints return **HTTP 501 `NOT_IMPLEMENTED`** — never fabricated results
+Not built yet: entities, graph, detections, Pattern Hunter, anomalies, AI
+investigation, reporting, threat intel, pseudonymisation. Those endpoints
+return **HTTP 501 `NOT_IMPLEMENTED`** — never fabricated results
 ([ADR-0004](docs/adr/0004-not-implemented-over-fake-results.md)).
 See [docs/ROADMAP.md](docs/ROADMAP.md) for what lands when.
 
@@ -56,7 +61,9 @@ field at the top right, and:
 4. Press **Verify evidence** — the stored object is re-read, re-hashed, and
    reported as `VERIFIED`
 5. Scroll to **Chain of custody** to see `CASE_CREATE → COLLECT → STORE → VERIFY`
-6. Open **Anchoring → Anchor now**, then use **Show proof** on the evidence row
+6. Press **Parse** on the evidence row, then **Timeline** to see the incident
+   reconstructed — click any event to read the original source record
+7. Open **Anchoring → Anchor now**, then use **Show proof** on the evidence row
    to walk file → digest → manifest → leaf → root → signature → ledger
 
 The API is at http://localhost:8000, with interactive docs at `/docs`.
@@ -65,7 +72,7 @@ To drive the same workflow from a shell:
 
 ```bash
 make demo-data
-TRACE_TOKEN=<your token> ./scripts/smoke_sprint1.sh
+TRACE_TOKEN=<your token> ./scripts/smoke.sh
 ```
 
 ---
@@ -101,10 +108,14 @@ configuration changes rather than rewrites.
 ### The provenance chain
 
 ```
-Finding → Detection → Normalized Event → Original Event → Evidence Object → SHA-256
-                                                                              ↓
+Finding → Detection → Normalized Event → Original Record → Evidence Object → SHA-256
+                          raw_reference ─┘                                      ↓
                                           Merkle leaf → signed root → immutable ledger
 ```
+
+`raw_reference` is a byte-accurate locator (`jsonl:12:4096:312`), so
+`GET /evidence/{id}/record` range-reads the exact source record out of a stored
+artifact — one record from a 40 GB image without downloading the image.
 
 This is structural, not a convention: detections require the event IDs they
 fired on, graph edges require the events that support them, and an AI statement
@@ -153,6 +164,7 @@ bundle, the UI and the verifier output.
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Components, layering, replaceable interfaces, provenance |
 | [docs/DATA_MODEL.md](docs/DATA_MODEL.md) | Cases, evidence, audit chain, events, entities, graph |
 | [docs/API.md](docs/API.md) | Endpoints, the 501 contract, request/response shapes |
+| [docs/NORMALIZATION.md](docs/NORMALIZATION.md) | Parsers, event storage, search, timeline, clock skew, limits |
 | [docs/ANCHORING.md](docs/ANCHORING.md) | Merkle log, signing, ledgers, proof bundles, threat model, known limits |
 | [docs/SECURITY.md](docs/SECURITY.md) | Threat model, RBAC matrix, evidence handling, AI boundary, known gaps |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Sprint-by-sprint scope and definition of done |
@@ -184,7 +196,7 @@ docs/        Architecture, data model, API, security, roadmap, ADRs
 
 ```bash
 make backend-deps      # create backend/.venv
-make test              # 255 tests, no infrastructure required
+make test              # 353 tests, no infrastructure required
 make lint              # ruff over app and tests
 make frontend-deps
 make frontend-build    # typecheck + production build
@@ -198,6 +210,13 @@ The suite covers streaming-hash correctness, path-traversal resistance, the
 full ingest→verify workflow, tamper and missing-object detection, audit-chain
 tamper detection, the RBAC matrix (including a sweep asserting every `/api/v1`
 route is authenticated), and the 501 contract for every stub.
+
+Sprint 2 adds: parsers exercised against the same synthetic telemetry an
+analyst would upload, byte-locator round-trips across awkward chunk boundaries,
+a shared event-store contract suite run against both backends, the
+lossless column/`extra` mapping asserted field by field, worker
+failure-isolation, and a full slice from four raw artifacts to one reconstructed
+timeline and back to the original bytes.
 
 Anchoring adds: the RFC 6962 tree checked exhaustively against an independent
 verifier (every leaf of every tree size to 33, every consistency pair — around

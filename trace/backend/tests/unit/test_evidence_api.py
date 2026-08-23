@@ -28,9 +28,10 @@ async def test_upload_hashes_stores_and_registers_evidence(client, case, object_
     assert evidence["case_id"] == case["case_id"]
     assert evidence["original_filename"] == "sysmon-operational.jsonl"
     assert evidence["storage_key"].startswith(f"default/{case['case_id']}/{evidence['evidence_id']}/")
-    # Queued, not parsed — Sprint 1 has no parsers and does not pretend otherwise.
+    # Queued, not parsed: evidence is stored and verifiable before anything
+    # interprets it, and TRACE does not claim otherwise.
     assert evidence["parse_status"] == "QUEUED"
-    assert "not implemented" in evidence["parse_detail"].lower()
+    assert "no events have been produced" in evidence["parse_detail"].lower()
 
     stored = await object_store.stat(evidence["storage_bucket"], evidence["storage_key"])
     assert stored.size == len(PAYLOAD)

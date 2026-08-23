@@ -4,6 +4,12 @@
 --
 -- Hot fields are materialised as top-level columns so ClickHouse indexes them;
 -- the long tail lives in `extra`.
+--
+-- Ports, PIDs and sizes are Nullable on purpose. "Absent" and "zero" are
+-- different facts in forensics: PID 0 is a real process and an empty file has
+-- size 0. Nullable costs a null-map byte per value; conflating them costs
+-- evidence. Strings stay non-nullable with '' meaning absent, which is
+-- lossless because the event model normalises blank strings away.
 CREATE TABLE IF NOT EXISTS trace.events
 (
     event_id            String,
@@ -30,30 +36,30 @@ CREATE TABLE IF NOT EXISTS trace.events
     device_entity_id    String,
 
     src_ip              String,
-    src_port            UInt16 DEFAULT 0,
+    src_port            Nullable(UInt16),
     dst_ip              String,
-    dst_port            UInt16 DEFAULT 0,
+    dst_port            Nullable(UInt16),
     dst_domain          String,
 
-    process_pid         UInt32 DEFAULT 0,
+    process_pid         Nullable(UInt32),
     process_guid        String,
     process_name        String,
     process_path        String,
     process_command_line String,
     process_sha256      String,
-    parent_pid          UInt32 DEFAULT 0,
+    parent_pid          Nullable(UInt32),
     parent_guid         String,
     parent_name         String,
 
     file_path           String,
     file_name           String,
     file_sha256         String,
-    file_size           UInt64 DEFAULT 0,
+    file_size           Nullable(UInt64),
 
     network_protocol    LowCardinality(String),
     network_direction   LowCardinality(String),
-    network_bytes_in    UInt64 DEFAULT 0,
-    network_bytes_out   UInt64 DEFAULT 0,
+    network_bytes_in    Nullable(UInt64),
+    network_bytes_out   Nullable(UInt64),
 
     -- Provenance. Required: an event that cannot be walked back to evidence
     -- must never reach this table (docs/ARCHITECTURE.md §7).

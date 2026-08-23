@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile
 from fastapi.responses import StreamingResponse
 
 from app.api.deps import (
@@ -66,6 +66,9 @@ async def ingest_evidence(
     retention_policy: Annotated[str, Form()] = "default-365d",
     legal_hold: Annotated[bool, Form()] = False,
     notes: Annotated[str | None, Form()] = None,
+    clock_offset_seconds: Annotated[float | None, Form()] = None,
+    clock_offset_confidence: Annotated[float | None, Form()] = None,
+    clock_offset_method: Annotated[str | None, Form()] = None,
 ) -> EvidenceRead:
     """Upload an artifact, hash it, store it, prove it was stored, then queue parsing.
 
@@ -94,6 +97,9 @@ async def ingest_evidence(
         retention_policy=retention_policy,
         legal_hold=legal_hold,
         notes=notes or None,
+        clock_offset_seconds=clock_offset_seconds,
+        clock_offset_confidence=clock_offset_confidence,
+        clock_offset_method=clock_offset_method or None,
     )
     evidence = await ingestion.ingest(
         stream=_iter_upload(file),
@@ -150,6 +156,44 @@ async def verify_evidence(
         principal,
         source_ip=client_ip(request),
         user_agent=user_agent(request),
+    )
+
+
+@router.get("/{evidence_id}/record")
+async def get_raw_record(
+    evidence_id: str,
+    request: Request,
+    service: EvidenceServiceDep,
+    settings: SettingsDep,
+    principal: Annotated[Principal, Depends(require(EVIDENCE_READ))],
+    reference: Annotated[str, Query(min_length=3, max_length=128)] = "",
+) -> Response:
+    """Return the exact original bytes a normalized event came from.
+
+    The last hop of the "SHOW EVIDENCE" chain (brief §57): a finding points at
+    a detection, which points at events, each of which carries a byte-accurate
+    ``raw_reference`` into its source artifact. This serves that range.
+
+    Range-read, so pulling one record out of a 40 GB image does not download
+    the image.
+    """
+    from app.normalization.service import read_raw_record  # noqa: PLC0415
+
+    evidence = await service.get(evidence_id, principal)
+    payload = await read_raw_record(
+        service.store, evidence, reference, max_bytes=settings.record_max_bytes
+    )
+    # Served as an attachment-style octet-stream like any other evidence bytes:
+    # this is raw content from a compromised machine, not trusted markup.
+    return Response(
+        content=payload,
+        media_type="application/octet-stream",
+        headers={
+            "X-TRACE-Evidence-Id": evidence.evidence_id,
+            "X-TRACE-Raw-Reference": reference,
+            "X-Content-Type-Options": "nosniff",
+            "Content-Disposition": "inline",
+        },
     )
 
 

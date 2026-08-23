@@ -145,6 +145,10 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+      # OpenSearch is optional: search falls back to the event store, so the
+      # API must not be held hostage to a service most deployments do not use.
+      opensearch:
+        condition: service_started
     environment:
       TRACE_ENV: ${TRACE_ENV:-dev}
       TRACE_LOG_LEVEL: ${TRACE_LOG_LEVEL:-INFO}
@@ -170,6 +174,17 @@ services:
       TRACE_MEMGRAPH_PORT: "7687"
       TRACE_OLLAMA_URL: http://ollama:11434
       TRACE_AUDIT_FAIL_CLOSED: "true"
+      # ---- normalization / search (docs/NORMALIZATION.md) ----
+      TRACE_PARSE_ON_INGEST: ${TRACE_PARSE_ON_INGEST:-true}
+      TRACE_PARSE_MAX_RECORDS: ${TRACE_PARSE_MAX_RECORDS:-5000000}
+      TRACE_PARSE_MAX_BYTES: ${TRACE_PARSE_MAX_BYTES:-8589934592}
+      TRACE_PARSE_MAX_RECORD_BYTES: ${TRACE_PARSE_MAX_RECORD_BYTES:-8388608}
+      TRACE_RECORD_MAX_BYTES: ${TRACE_RECORD_MAX_BYTES:-4194304}
+      TRACE_EVENT_STORE: ${TRACE_EVENT_STORE:-clickhouse}
+      TRACE_SEARCH_BACKEND: ${TRACE_SEARCH_BACKEND:-sql}
+      TRACE_OPENSEARCH_INDEX: ${TRACE_OPENSEARCH_INDEX:-trace-events}
+      TRACE_OPENSEARCH_USERNAME: ${TRACE_OPENSEARCH_USERNAME:-}
+      TRACE_OPENSEARCH_PASSWORD: ${TRACE_OPENSEARCH_PASSWORD:-}
       # ---- evidence anchoring (docs/ANCHORING.md) ----
       TRACE_ANCHOR_ENABLED: ${TRACE_ANCHOR_ENABLED:-true}
       TRACE_ANCHOR_BACKEND: ${TRACE_ANCHOR_BACKEND:-local}

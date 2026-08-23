@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base
@@ -61,6 +61,14 @@ class Evidence(Base):
         String(16), nullable=False, default=ParseStatus.PENDING
     )
     parse_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # The clock skew the collector measured on the source machine, if any.
+    # An assertion about the source's clock, revisable when a better
+    # measurement arrives — which is why it is excluded from the anchored
+    # manifest while the timestamps it applies to are committed.
+    clock_offset_seconds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    clock_offset_confidence: Mapped[float | None] = mapped_column(Float, nullable=True)
+    clock_offset_method: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     last_verified_at: Mapped[datetime | None] = mapped_column(nullable=True)
     last_verification_result: Mapped[str | None] = mapped_column(String(16), nullable=True)

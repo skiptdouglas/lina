@@ -39,18 +39,24 @@ can run without TRACE.
 
 ---
 
-## Sprint 2 — Normalization, search, timeline
+## Sprint 2 — Normalization, search, timeline ✅ *implemented*
 
-* Parser plugin framework (`normalization/parsers/`), registry + dispatch
-* Sysmon: events 1, 3, 7, 10, 11, 13, 22
-* Windows Security events, Linux JSON, Zeek JSON, Suricata EVE JSON
-* OCSF-inspired normalized event → ClickHouse `trace.events`
-* `raw_reference` byte/record locator for every event (provenance)
-* OpenSearch indexing + `POST /api/v1/search`
-* `GET /api/v1/cases/{case_id}/timeline`
-* Clock-skew fields carried end to end
-* Sandboxed parse workers; MinIO object-lock/versioning enabled
-* UI: Search, Timeline (interactive, click-through to evidence)
+[docs/NORMALIZATION.md](NORMALIZATION.md). Parser plugin framework with
+registry and content sniffing; Sysmon (events 1, 3, 7, 10, 11, 13, 22),
+Windows Security (incl. 1102 log clearing), Zeek (conn/dns/http/ssl/files),
+Suricata EVE and generic Linux JSON; OCSF-inspired normalized events; a typed
+`EventStore` with ClickHouse **and** SQL implementations held to one shared
+contract suite ([ADR-0010](adr/0010-typed-event-store-interface.md)); a
+byte-accurate `raw_reference` on every event with range-read retrieval of the
+original record; `POST /api/v1/search` with capability reporting;
+`GET /api/v1/cases/{id}/timeline`; clock-skew carried end to end; a failure-
+isolating background parse worker; UI Search and Timeline with click-through to
+the original bytes.
+
+Deferred from this sprint, with reasons recorded rather than quietly dropped:
+sandboxed parser containers (parsing is in-process with bounded limits), MinIO
+object-lock (requires bucket creation with lock enabled — a deployment step,
+documented), and native EVTX/PCAP readers (convert to JSON lines for now).
 
 ## Sprint 3 — Entities and graph
 

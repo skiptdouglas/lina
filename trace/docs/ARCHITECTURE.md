@@ -136,12 +136,14 @@ Defined as abstract base classes, selected by configuration:
 | Interface | Location | Implementations |
 |---|---|---|
 | `ObjectStore` | `evidence/storage.py` | `MinioObjectStore`, `InMemoryObjectStore` (tests) |
-| `AnalyticsStore` | `core/analytics.py` | `ClickHouseAnalyticsStore`, *Databricks (planned)* |
-| `SearchBackend` | `core/search_backend.py` | *OpenSearch (Sprint 2)* |
+| `AnalyticsStore` | `core/analytics.py` | `ClickHouseAnalyticsStore`, `NullAnalyticsStore`, *Databricks (planned)* |
 | `GraphClient` | `graph/client.py` | *Memgraph (Sprint 3)*, *Neo4j (planned)* |
 | `AIProvider` | `ai/provider.py` | *Ollama (Sprint 6)*, OpenAI/Azure/Anthropic/vLLM (planned) |
 | `AuditSink` | `audit/sinks.py` | `SqlAuditSink`, `ClickHouseAuditSink`, `NullAuditSink` |
 | `AnchorBackend` | `anchoring/backends/` | `LocalLedger`, `OpenTimestamps`, `Evm`, `FileReceipt` |
+| `EventStore` | `events/store.py` | `ClickHouseEventStore`, `SqlEventStore` |
+| `SearchBackend` | `search/backend.py` | `SqlSearchBackend`, `OpenSearchBackend` |
+| `Parser` | `normalization/parsers/` | Sysmon, Windows Security, Zeek, Suricata, Linux JSON |
 | `Signer` | `anchoring/signing.py` | `Ed25519Signer`, *KMS/HSM (planned)* |
 | `IngestionQueue` | `ingestion/queue.py` | `InMemoryIngestionQueue`, *broker-backed (planned)* |
 | `ThreatIntelProvider` | `threatintel/provider.py` | *MISP / OpenCTI / TAXII (Sprint 7)* |
@@ -194,6 +196,18 @@ no dependencies and no TRACE imports — a guarantee only checkable by the
 system under scrutiny is not a guarantee. Full design in
 [ANCHORING.md](ANCHORING.md).
 
+## 6b. Normalization
+
+Parsers turn a raw artifact into normalized events, reading a **fresh copy from
+object storage** — never the upload stream (ADR-0005). Every event carries a
+byte-accurate `raw_reference`, so `GET /evidence/{id}/record` can range-read the
+exact source record back out. Original timestamps are never overwritten; clock
+corrections are recorded beside them.
+
+The event store is a typed interface with two real implementations
+([ADR-0010](adr/0010-typed-event-store-interface.md)), held to one shared
+contract suite. Design and limits in [NORMALIZATION.md](NORMALIZATION.md).
+
 ## 7. Provenance chain (the "SHOW EVIDENCE" requirement)
 
 Every UI surface that presents a conclusion must be able to walk:
@@ -206,6 +220,8 @@ Detection          detections.event_ids[]
 Normalized Event   events.evidence_id + events.raw_reference
    ↓
 Original Event     byte range / record index inside the raw object
+   ↓
+Original Record    raw_reference → GET /evidence/{id}/record (byte range)
    ↓
 Evidence Object    evidence.storage_bucket + storage_key
    ↓

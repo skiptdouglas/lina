@@ -113,10 +113,8 @@ async def test_case_to_verified_evidence(client) -> None:
     chain = (await client.get("/api/v1/audit/verify-chain", headers=auth())).json()
     assert chain["verified"] is True
 
-    # 10. Nothing claims to have been parsed: Sprint 1 has no parsers.
+    # 10. Evidence is stored, hashed and verifiable *before* anything parses
+    #     it. That ordering is Sprint 1's guarantee and it still holds: the
+    #     artifact is queued, not yet interpreted.
     assert fetched["parse_status"] == "QUEUED"
-    parse_attempt = await client.post(
-        f"/api/v1/ingestion/parse/{evidence_id}", headers=auth()
-    )
-    assert parse_attempt.status_code == 501
-    assert parse_attempt.json()["status"] == "NOT_IMPLEMENTED"
+    assert "not implemented" not in (fetched["parse_detail"] or "").lower()

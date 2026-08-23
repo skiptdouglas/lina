@@ -11,7 +11,8 @@ Ollama (local LLM). Everything runs under Docker Compose.
 
 Read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) before making structural
 changes, and [docs/ROADMAP.md](docs/ROADMAP.md) to see which sprint owns a
-feature. Sprint 1 (evidence foundation) is implemented; Sprints 2–7 are not.
+feature. Sprints 1–2 (evidence foundation, anchoring, normalization/search/
+timeline) are implemented; Sprints 3–7 are not.
 
 ## Commands
 
@@ -59,7 +60,19 @@ There is no `yarn test` and no jest/vitest suite yet; the UI is verified by
    Proof bundles and the offline verifier always print
    `what_this_does_not_prove`. Marketing language here is a review defect
    (ADR-0009).
-9. **Manifests commit immutable fields only.** Adding a mutable field to
+9. **Every event carries provenance.** `evidence_id` plus a byte-accurate
+   `raw_reference`. A parser that cannot locate a record's bytes must not emit
+   an event for it. Never widen a record locator into a general read: it is
+   validated, bounded by the object size, and size-capped.
+10. **Never overwrite an original timestamp.** Clock corrections are recorded
+   beside the original with a method and a confidence, never in place of it.
+11. **Absence is not zero** (ADR-0011). PID 0 is a real process; an empty file
+   has size 0. New numeric columns must answer explicitly whether zero is a
+   real value, and be nullable if it is.
+12. **Report what a parse did NOT do.** Unrecognised record types, skipped
+   malformed lines and truncation are counted and surfaced. An analyst
+   concluding "that did not happen" needs to know whether TRACE looked.
+13. **Manifests commit immutable fields only.** Adding a mutable field to
    `COMMITTED_EVIDENCE_FIELDS` would invalidate every previously issued proof
    the first time it changed. `tests/unit/test_manifest.py` guards both
    directions.
@@ -82,6 +95,9 @@ There is no `yarn test` and no jest/vitest suite yet; the UI is verified by
   an air-gapped machine. If you change canonical serialization, the Merkle
   construction or the signature domain, update the verifier in lockstep;
   `tests/integration/test_offline_verifier.py` runs it as a real subprocess.
+* The event store interface takes typed queries, not SQL (ADR-0010). If a new
+  query shape is needed, add a method — every backend must be able to serve it,
+  and `tests/contract/event_store_contract.py` runs against all of them.
 * Record consequential decisions as a new ADR in `docs/adr/`; ADRs are
   immutable, a reversal supersedes.
 * Run `make lint` and `make test` before committing.

@@ -8,11 +8,8 @@ from app.core.capabilities import CAPABILITIES, CAPABILITY_INDEX, not_implemente
 from tests.conftest import auth
 
 STUB_REQUESTS: list[tuple[str, str, dict | None]] = [
-    ("POST", "/api/v1/search", {"query": "powershell"}),
-    ("GET", "/api/v1/cases/CASE-0001/timeline", None),
     ("GET", "/api/v1/cases/CASE-0001/evidence-gaps", None),
     ("GET", "/api/v1/cases/CASE-0001/contradictions", None),
-    ("POST", "/api/v1/ingestion/parse/EVD-1", None),
     ("GET", "/api/v1/entities", None),
     ("GET", "/api/v1/entities/USER-00042", None),
     ("GET", "/api/v1/graph/neighbourhood?entity_id=USER-00042", None),
@@ -54,6 +51,10 @@ async def test_capabilities_endpoint_lists_both_halves(client) -> None:
     pending = {c["key"] for c in body["not_implemented"]}
     assert "evidence.ingest" in implemented
     assert "evidence.verify" in implemented
+    # Sprint 2 moved these across; the registry is the single source of truth.
+    assert "search.query" in implemented
+    assert "timeline.case" in implemented
+    assert "normalization.parsers" in implemented
     assert "patterns.find_similar" in pending
     assert "ai.investigate" in pending
     assert implemented.isdisjoint(pending)

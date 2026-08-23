@@ -68,8 +68,8 @@ signing-key: ## Generate the Ed25519 key that signs Merkle tree heads
 verify-proof: ## Verify a proof bundle offline (make verify-proof BUNDLE=proof.json [FILE=evidence.log])
 	@$(PY) scripts/verify_anchor.py $(BUNDLE) $(if $(FILE),--evidence-file $(FILE),) $(if $(KEY_ID),--expect-key-id $(KEY_ID),)
 
-smoke: ## Drive the Sprint 1 workflow against a running stack (needs TRACE_TOKEN)
-	./scripts/smoke_sprint1.sh
+smoke: ## Drive the full workflow against a running stack (needs TRACE_TOKEN)
+	./scripts/smoke.sh
 
 clean: ## Remove build artefacts and local databases
 	rm -rf backend/.pytest_cache backend/.ruff_cache frontend/dist

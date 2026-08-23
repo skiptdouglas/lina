@@ -73,6 +73,15 @@ async def lifespan(app: FastAPI):
         except Exception as exc:  # noqa: BLE001 - analytics is not required for Sprint 1
             logger.error("ClickHouse schema bootstrap failed: %s", exc)
 
+    parse_task: asyncio.Task | None = None
+    if settings.parse_on_ingest:
+        from app.ingestion.worker import ParseWorker  # noqa: PLC0415
+
+        parse_task = asyncio.create_task(ParseWorker(state).run_forever())
+        logger.info(
+            "Parse worker started; %d parser(s) registered.", len(_parser_count())
+        )
+
     anchor_task: asyncio.Task | None = None
     if settings.anchor_enabled and settings.anchor_auto and state.signer is not None:
         anchor_task = asyncio.create_task(_periodic_anchor(app))
@@ -92,12 +101,19 @@ async def lifespan(app: FastAPI):
     try:
         yield
     finally:
-        if anchor_task is not None:
-            anchor_task.cancel()
-            with suppress(asyncio.CancelledError):
-                await anchor_task
+        for task in (parse_task, anchor_task):
+            if task is not None:
+                task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await task
         await state.analytics.close()
         await state.database.dispose()
+
+
+def _parser_count():  # noqa: ANN202
+    from app.normalization.parsers import registry  # noqa: PLC0415
+
+    return registry.all()
 
 
 async def _periodic_anchor(app: FastAPI) -> None:

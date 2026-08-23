@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Drive the Sprint 1 workflow (brief §59) against a running TRACE stack.
+# Drive the TRACE workflow end to end against a running stack.
 #
-#   TRACE_TOKEN=<token from .env> ./scripts/smoke_sprint1.sh
+#   TRACE_TOKEN=<token from .env> ./scripts/smoke.sh
 #
 # Exercises: create case -> upload evidence -> SHA-256 -> stored -> listed
-#            -> verify -> VERIFIED -> chain of custody intact.
+#            -> verify -> VERIFIED -> chain of custody intact
+#            -> parse -> normalized events -> search -> timeline
+#            -> original record bytes -> anchor -> offline proof verification.
 set -euo pipefail
 
 API="${TRACE_API_URL:-http://localhost:8000/api/v1}"
@@ -102,4 +104,33 @@ else
   echo "    anchoring is not enabled on this deployment — skipping"
 fi
 
-printf '\n\033[32mSprint 1 workflow passed.\033[0m\n'
+step "Parsing the artifact into normalized events"
+parse_code=$(curl -sS -o /tmp/trace-parse.json -w '%{http_code}' "${auth[@]}" \
+  -H 'Content-Type: application/json' -X POST "$API/ingestion/parse/${evidence_id}" -d '{"force":true}')
+if [[ "$parse_code" == "200" ]]; then
+  jq -r '"    \(.parser_id): \(.events_produced) event(s) from \(.records_read) record(s), \(.unrecognised) unrecognised"' /tmp/trace-parse.json
+  events=$(jq -r '.events_produced' /tmp/trace-parse.json)
+  [[ "$events" -gt 0 ]] || fail "parsing produced no events"
+else
+  fail "parsing returned $parse_code: $(cat /tmp/trace-parse.json)"
+fi
+
+step "Searching normalized events"
+curl -fsS "${auth[@]}" -H 'Content-Type: application/json' \
+  -X POST "$API/search" -d '{"query":"powershell"}' > /tmp/trace-search.json
+jq -r '"    \(.total) hit(s) in \(.took_ms)ms via backend \"\(.backend.name)\" (fuzzy: \(.backend.fuzzy))"' /tmp/trace-search.json
+
+step "Reconstructing the case timeline"
+curl -fsS "${auth[@]}" "$API/cases/${CASE_ID}/timeline?limit=500" > /tmp/trace-timeline.json
+jq -r '"    \(.total) event(s), clock corrections applied: \(.clock_corrections_applied)"' /tmp/trace-timeline.json
+jq -r '.entries[:6][] | "      \(.event.timestamp[11:19])  \(.event.event_type)"' /tmp/trace-timeline.json
+
+step "Walking one event back to its original bytes"
+ref=$(jq -r '.entries[0].event.raw_reference' /tmp/trace-timeline.json)
+ev_id=$(jq -r '.entries[0].event.evidence_id' /tmp/trace-timeline.json)
+curl -fsS "${auth[@]}" "$API/evidence/${ev_id}/record?reference=${ref}" > /tmp/trace-record.json
+echo "    locator ${ref} ->"
+jq -c '.' /tmp/trace-record.json | head -c 200 | sed 's/^/      /'
+echo
+
+printf '\n\033[32mTRACE workflow passed.\033[0m\n'

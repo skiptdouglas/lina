@@ -15,9 +15,12 @@ from app.cases.service import CaseService
 from app.core.config import Settings
 from app.core.security import Principal
 from app.core.state import AppState
+from app.events.store import EventStore
 from app.evidence.service import EvidenceService
 from app.evidence.storage import ObjectStore
 from app.ingestion.service import IngestionService
+from app.normalization.service import ParseService
+from app.search.backend import SearchBackend
 
 bearer_scheme = HTTPBearer(auto_error=False, description="TRACE API token")
 
@@ -32,6 +35,14 @@ def get_settings(request: Request) -> Settings:
 
 def get_object_store(request: Request) -> ObjectStore:
     return get_state(request).object_store
+
+
+def get_event_store(request: Request) -> EventStore:
+    return get_state(request).events
+
+
+def get_search_backend(request: Request) -> SearchBackend:
+    return get_state(request).search
 
 
 async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
@@ -134,6 +145,22 @@ def get_anchoring_service(
     )
 
 
+def get_parse_service(
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_session)],
+    audit: Annotated[AuditService, Depends(get_audit_service)],
+) -> ParseService:
+    state = get_state(request)
+    return ParseService(
+        session,
+        store=state.object_store,
+        events=state.events,
+        audit=audit,
+        settings=state.settings,
+        search=state.search,
+    )
+
+
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
 AuditDep = Annotated[AuditService, Depends(get_audit_service)]
@@ -141,3 +168,6 @@ CaseServiceDep = Annotated[CaseService, Depends(get_case_service)]
 EvidenceServiceDep = Annotated[EvidenceService, Depends(get_evidence_service)]
 IngestionServiceDep = Annotated[IngestionService, Depends(get_ingestion_service)]
 AnchoringServiceDep = Annotated[AnchoringService, Depends(get_anchoring_service)]
+EventStoreDep = Annotated[EventStore, Depends(get_event_store)]
+SearchBackendDep = Annotated[SearchBackend, Depends(get_search_backend)]
+ParseServiceDep = Annotated[ParseService, Depends(get_parse_service)]
