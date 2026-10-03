@@ -1,0 +1,38 @@
+{%- comment -%} New Arrivals / any collection rail (SOP §5) {%- endcomment -%}
+{%- assign coll = section.settings.collection -%}
+<section class="section{% if section.settings.style == 'grey' %} section--grey{% endif %}">
+  <div class="page-width">
+    <div class="section-header">
+      <div>
+        {%- if section.settings.eyebrow != blank -%}<p class="eyebrow">{{ section.settings.eyebrow }}</p>{%- endif -%}
+        <h2>{{ section.settings.heading }}</h2>
+      </div>
+      {%- if coll != blank -%}<a href="{{ coll.url }}">{{ 'general.view_all' | t }}</a>{%- endif -%}
+    </div>
+    <ul class="product-grid product-grid--4">
+      {%- if coll != blank -%}
+        {%- for product in coll.products limit: section.settings.limit -%}
+          <li>{% render 'product-card', product: product %}</li>
+        {%- endfor -%}
+      {%- else -%}
+        {%- for i in (1..4) -%}
+          <li><div class="card"><div class="card__media">{{ 'product-1' | placeholder_svg_tag }}</div><div class="card__info"><span class="card__brand">INNO64</span><span class="card__title">Nissan Skyline GT-R R34</span><div class="card__meta"><span class="card__scale">1:64</span><span class="card__price">$49.95</span></div></div></div></li>
+        {%- endfor -%}
+      {%- endif -%}
+    </ul>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product rail",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Just landed" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "New arrivals" },
+    { "type": "collection", "id": "collection", "label": "Collection", "info": "Use a smart collection sorted by 'Date, new to old'." },
+    { "type": "range", "id": "limit", "label": "Products", "min": 4, "max": 12, "step": 4, "default": 8 },
+    { "type": "select", "id": "style", "label": "Background", "options": [{ "value": "white", "label": "White" }, { "value": "grey", "label": "Light grey" }], "default": "white" }
+  ],
+  "presets": [{ "name": "Product rail" }]
+}
+{% endschema %}

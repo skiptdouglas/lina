@@ -1,0 +1,66 @@
+{%- comment -%}
+  Classic customer account dashboard (SOP §18): order history, shipping
+  details, pre-orders and wishlist. If the store uses Shopify's new customer
+  accounts, Shopify hosts these pages and this template is unused.
+{%- endcomment -%}
+<section class="section">
+  <div class="page-width">
+    <p class="eyebrow">{{ 'account.welcome' | t }}</p>
+    <h1>{{ customer.first_name | default: customer.email }}</h1>
+    <p><a href="{{ routes.account_logout_url }}" style="text-decoration:underline">{{ 'account.logout' | t }}</a></p>
+
+    <div class="cart-layout" style="padding-top:16px">
+      <div>
+        <h2>{{ 'account.preorders' | t }}</h2>
+        {%- assign has_pre = false -%}
+        {%- for order in customer.orders -%}
+          {%- for li in order.line_items -%}
+            {%- if li.properties['_preorder'] == 'true' and li.fulfillment == nil -%}
+              {%- assign has_pre = true -%}
+              <div class="cart-item">
+                {%- if li.image -%}{{ li.image | image_url: width: 200 | image_tag: loading: 'lazy', alt: li.title }}{%- endif -%}
+                <div>
+                  <div class="cart-item__title">{{ li.product.title | default: li.title }}</div>
+                  <div class="cart-item__meta">{{ 'account.order' | t }} {{ order.name }} · {{ li.product.metafields.scale.preorder_nz_arrival.value }}</div>
+                </div>
+                <span class="badge badge--accent">{{ 'products.stock.preorder' | t }}</span>
+              </div>
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+        {%- unless has_pre -%}<p>{{ 'account.no_preorders' | t }}</p>{%- endunless -%}
+
+        <h2 style="margin-top:40px">{{ 'account.orders' | t }}</h2>
+        {%- paginate customer.orders by 20 -%}
+          {%- if customer.orders.size > 0 -%}
+            <table class="spec-table">
+              <thead><tr><th>{{ 'account.order' | t }}</th><th>{{ 'account.date' | t }}</th><th>{{ 'account.status' | t }}</th><th>{{ 'cart.total' | t }}</th></tr></thead>
+              <tbody>
+                {%- for order in customer.orders -%}
+                  <tr>
+                    <td><a href="{{ order.customer_url }}" style="text-decoration:underline">{{ order.name }}</a></td>
+                    <td>{{ order.created_at | date: '%-d %b %Y' }}</td>
+                    <td>{{ order.fulfillment_status_label }}</td>
+                    <td>{{ order.total_price | money }}</td>
+                  </tr>
+                {%- endfor -%}
+              </tbody>
+            </table>
+            {%- if paginate.pages > 1 -%}{% render 'pagination', paginate: paginate %}{%- endif -%}
+          {%- else -%}
+            <p>{{ 'account.no_orders' | t }}</p>
+          {%- endif -%}
+        {%- endpaginate -%}
+      </div>
+      <aside class="cart-summary">
+        <h3>{{ 'account.shipping_details' | t }}</h3>
+        {{ customer.default_address | format_address }}
+        <a href="{{ routes.account_addresses_url }}" class="button button--outline">{{ 'account.manage_addresses' | t }}</a>
+        <a href="/pages/wishlist" class="button">{{ 'wishlist.title' | t }}</a>
+      </aside>
+    </div>
+  </div>
+</section>
+{% schema %}
+{ "name": "Account", "settings": [] }
+{% endschema %}

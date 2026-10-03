@@ -1,0 +1,19 @@
+{%- comment -%} Mobile bottom nav: HOME | SHOP | DROPS | SEARCH | CART (SOP §4) {%- endcomment -%}
+<nav class="mobile-nav" aria-label="{{ 'nav.mobile' | t }}">
+  <a href="{{ routes.root_url }}"{% if request.page_type == 'index' %} aria-current="page"{% endif %}>
+    {% render 'icon', name: 'home' %}{{ 'nav.home' | t }}
+  </a>
+  <a href="{{ settings.shop_url | default: routes.all_products_collection_url }}"{% if request.page_type == 'collection' %} aria-current="page"{% endif %}>
+    {% render 'icon', name: 'grid' %}{{ 'nav.shop' | t }}
+  </a>
+  <a href="{{ settings.drops_url | default: '/pages/drops' }}"{% if template.suffix == 'drops' or request.page_type == 'metaobject' %} aria-current="page"{% endif %}>
+    {% render 'icon', name: 'bolt' %}{{ 'nav.drops' | t }}
+  </a>
+  <a href="{{ routes.search_url }}" data-search-open{% if request.page_type == 'search' %} aria-current="page"{% endif %}>
+    {% render 'icon', name: 'search' %}{{ 'nav.search' | t }}
+  </a>
+  <a href="{{ routes.cart_url }}"{% if request.page_type == 'cart' %} aria-current="page"{% endif %}>
+    {% render 'icon', name: 'bag' %}{{ 'nav.cart' | t }}
+    <span class="count" data-cart-count{% if cart.item_count == 0 %} hidden{% endif %}>{{ cart.item_count }}</span>
+  </a>
+</nav>

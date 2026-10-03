@@ -1,0 +1,25 @@
+{
+  "sections": {
+    "main": {
+      "type": "brand-strip",
+      "blocks": {
+        "inno": { "type": "brand", "settings": { "collection": "inno64", "name": "INNO64" } },
+        "minigt": { "type": "brand", "settings": { "collection": "mini-gt", "name": "MINI GT" } },
+        "kaido": { "type": "brand", "settings": { "collection": "kaido-house", "name": "Kaido House" } },
+        "tarmac": { "type": "brand", "settings": { "collection": "tarmac-works", "name": "Tarmac Works" } },
+        "pop": { "type": "brand", "settings": { "collection": "pop-race", "name": "POP RACE" } },
+        "hj": { "type": "brand", "settings": { "collection": "hobby-japan", "name": "Hobby Japan" } },
+        "tlv": { "type": "brand", "settings": { "collection": "tomica-limited-vintage", "name": "Tomica Limited Vintage" } },
+        "kyosho": { "type": "brand", "settings": { "collection": "kyosho", "name": "Kyosho" } },
+        "ignition": { "type": "brand", "settings": { "collection": "ignition-model", "name": "Ignition Model" } },
+        "aoshima": { "type": "brand", "settings": { "collection": "aoshima", "name": "Aoshima" } },
+        "fujimi": { "type": "brand", "settings": { "collection": "fujimi", "name": "Fujimi" } },
+        "hasegawa": { "type": "brand", "settings": { "collection": "hasegawa", "name": "Hasegawa" } },
+        "tamiya": { "type": "brand", "settings": { "collection": "tamiya", "name": "Tamiya" } }
+      },
+      "block_order": ["inno", "minigt", "kaido", "tarmac", "pop", "hj", "tlv", "kyosho", "ignition", "aoshima", "fujimi", "hasegawa", "tamiya"],
+      "settings": { "eyebrow": "Curated makers", "heading": "Brands", "all_link": "/collections" }
+    }
+  },
+  "order": ["main"]
+}

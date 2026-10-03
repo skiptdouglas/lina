@@ -1,0 +1,63 @@
+{%- comment -%}
+  Shop / category / collection page with mobile-friendly filter drawer (SOP §7, §23).
+  When used on brand collections (template collection.brand) shows the brand logo.
+{%- endcomment -%}
+{%- assign logo = collection.metafields.scale.brand_logo.value -%}
+<div class="collection-hero">
+  <div class="page-width">
+    {%- if logo != blank -%}{{ logo | image_url: width: 400 | image_tag: class: 'collection-hero__logo', alt: collection.title }}{%- endif -%}
+    <p class="eyebrow">{{ 'collections.products_count' | t: count: collection.products_count }}</p>
+    <h1>{{ collection.title }}</h1>
+    {%- if collection.description != blank and section.settings.show_description -%}
+      <div class="collection-hero__desc rte">{{ collection.description }}</div>
+    {%- endif -%}
+  </div>
+</div>
+
+{%- paginate collection.products by section.settings.per_page -%}
+  <div class="page-width collection-layout" data-results>
+    {% render 'facets', results: collection, url: collection.url %}
+    <div>
+      <div class="collection-toolbar">
+        <button type="button" class="button button--outline facets-open" data-facets-open>{% render 'icon', name: 'filter' %}{{ 'filters.title' | t }}</button>
+        <label class="visually-hidden" for="SortBy">{{ 'collections.sort_by' | t }}</label>
+        <select id="SortBy" class="input" name="sort_by" form="Facets" data-sort>
+          {%- assign sort_by = collection.sort_by | default: collection.default_sort_by -%}
+          {%- for option in collection.sort_options -%}
+            <option value="{{ option.value }}"{% if option.value == sort_by %} selected{% endif %}>{{ option.name }}</option>
+          {%- endfor -%}
+        </select>
+      </div>
+      {% render 'active-facets', results: collection, url: collection.url %}
+      {%- if collection.products.size > 0 -%}
+        <ul class="product-grid">
+          {%- for product in collection.products -%}
+            {%- liquid
+              assign lazy = true
+              if forloop.index <= 6
+                assign lazy = false
+              endif
+            -%}
+            <li>{% render 'product-card', product: product, lazy: lazy %}</li>
+          {%- endfor -%}
+        </ul>
+        {%- if paginate.pages > 1 -%}{% render 'pagination', paginate: paginate %}{%- endif -%}
+      {%- else -%}
+        <div class="empty-state">
+          <h2>{{ 'collections.empty' | t }}</h2>
+          <a href="{{ collection.url }}" class="button">{{ 'filters.clear' | t }}</a>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+{%- endpaginate -%}
+
+{% schema %}
+{
+  "name": "Product grid",
+  "settings": [
+    { "type": "range", "id": "per_page", "label": "Products per page", "min": 12, "max": 48, "step": 12, "default": 24 },
+    { "type": "checkbox", "id": "show_description", "label": "Show description", "default": true }
+  ]
+}
+{% endschema %}

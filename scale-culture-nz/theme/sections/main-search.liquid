@@ -1,0 +1,57 @@
+{%- comment -%}
+  Search (SOP §22). Shopify search covers title, vendor, product type, tags,
+  SKU and variant barcode; vehicle metafields are added as searchable fields in
+  Search & Discovery. The import tooling also writes make/model/generation/scale
+  as tags so "R34" or "Porsche" hit every brand.
+{%- endcomment -%}
+<div class="collection-hero">
+  <div class="page-width">
+    <form action="{{ routes.search_url }}" method="get" role="search" style="display:flex;gap:8px;max-width:720px">
+      <input type="hidden" name="type" value="product">
+      <input type="hidden" name="options[prefix]" value="last">
+      <label for="SearchPage" class="visually-hidden">{{ 'search.placeholder' | t }}</label>
+      <input id="SearchPage" class="input" type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'search.placeholder' | t }}">
+      <button class="button button--accent" type="submit">{{ 'nav.search' | t }}</button>
+    </form>
+    {%- if search.performed -%}
+      <p class="eyebrow" style="margin-top:16px">{{ 'search.results_count' | t: count: search.results_count, terms: search.terms }}</p>
+    {%- endif -%}
+  </div>
+</div>
+
+{%- if search.performed -%}
+  {%- paginate search.results by 24 -%}
+    <div class="page-width collection-layout">
+      {% render 'facets', results: search, url: search.url %}
+      <div>
+        <div class="collection-toolbar">
+          <button type="button" class="button button--outline facets-open" data-facets-open>{% render 'icon', name: 'filter' %}{{ 'filters.title' | t }}</button>
+          <select class="input" name="sort_by" form="Facets" data-sort aria-label="{{ 'collections.sort_by' | t }}">
+            {%- for option in search.sort_options -%}
+              <option value="{{ option.value }}"{% if option.value == search.sort_by %} selected{% endif %}>{{ option.name }}</option>
+            {%- endfor -%}
+          </select>
+        </div>
+        {% render 'active-facets', results: search, url: search.url %}
+        {%- if search.results_count > 0 -%}
+          <ul class="product-grid">
+            {%- for item in search.results -%}
+              {%- if item.object_type == 'product' -%}<li>{% render 'product-card', product: item %}</li>{%- endif -%}
+            {%- endfor -%}
+          </ul>
+          {%- if paginate.pages > 1 -%}{% render 'pagination', paginate: paginate %}{%- endif -%}
+        {%- else -%}
+          <div class="empty-state">
+            <h2>{{ 'search.no_results' | t: terms: search.terms }}</h2>
+            <p>{{ 'search.no_results_hint' | t }}</p>
+            <a class="button" href="#drop-alerts">{{ 'newsletter.submit' | t }}</a>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+  {%- endpaginate -%}
+{%- endif -%}
+
+{% schema %}
+{ "name": "Search results", "settings": [] }
+{% endschema %}

@@ -1,0 +1,86 @@
+{%- comment -%}
+  Header: logo, primary nav (NEW | DIE-CAST | MODEL KITS | PRE-ORDERS | BRANDS | DROPS | SALE),
+  utility nav (Search, Account, Wishlist, Cart) — SOP §4.
+{%- endcomment -%}
+{%- if section.settings.announcement != blank -%}
+  <div class="announcement">
+    {%- if section.settings.announcement_link != blank -%}
+      <a href="{{ section.settings.announcement_link }}">{{ section.settings.announcement }}</a>
+    {%- else -%}
+      {{ section.settings.announcement }}
+    {%- endif -%}
+  </div>
+{%- endif -%}
+
+<header class="site-header">
+  <div class="page-width site-header__inner">
+    <a href="{{ routes.root_url }}" class="site-header__logo" aria-label="{{ shop.name }}">
+      {%- if section.settings.logo != blank -%}
+        {{ section.settings.logo | image_url: width: 400 | image_tag: alt: shop.name, loading: 'eager', height: 40 }}
+      {%- else -%}
+        Scale Culture<span>.</span>
+      {%- endif -%}
+    </a>
+
+    <nav class="site-header__nav" aria-label="{{ 'nav.primary' | t }}">
+      {%- assign menu = section.settings.menu -%}
+      {%- if menu != blank and menu.links.size > 0 -%}
+        {%- for link in menu.links -%}
+          <a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}{% if link.handle == 'sale' %} class="is-sale"{% endif %}>{{ link.title }}</a>
+        {%- endfor -%}
+      {%- else -%}
+        <a href="/collections/new-arrivals">New</a>
+        <a href="/collections/die-cast">Die-Cast</a>
+        <a href="/collections/model-kits">Model Kits</a>
+        <a href="/collections/pre-orders">Pre-Orders</a>
+        <a href="/collections">Brands</a>
+        <a href="/pages/drops">Drops</a>
+        <a href="/collections/sale" class="is-sale">Sale</a>
+      {%- endif -%}
+    </nav>
+
+    <div class="site-header__utility">
+      <a href="{{ routes.search_url }}" class="icon-button" data-search-open aria-label="{{ 'nav.search' | t }}">{% render 'icon', name: 'search' %}</a>
+      <a href="{{ routes.account_url }}" class="icon-button hide-mobile" aria-label="{{ 'nav.account' | t }}">{% render 'icon', name: 'account' %}</a>
+      <a href="/pages/wishlist" class="icon-button" aria-label="{{ 'nav.wishlist' | t }}">
+        {% render 'icon', name: 'heart' %}<span class="count" data-wishlist-count hidden>0</span>
+      </a>
+      <a href="{{ routes.cart_url }}" class="icon-button hide-mobile" aria-label="{{ 'nav.cart' | t }}">
+        {% render 'icon', name: 'bag' %}<span class="count" data-cart-count{% if cart.item_count == 0 %} hidden{% endif %}>{{ cart.item_count }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="search-overlay" id="SearchOverlay" role="dialog" aria-modal="true" aria-label="{{ 'nav.search' | t }}">
+  <button type="button" class="icon-button search-overlay__close" data-search-close aria-label="{{ 'general.close' | t }}">{% render 'icon', name: 'close' %}</button>
+  <form action="{{ routes.search_url }}" method="get" role="search">
+    <input type="hidden" name="type" value="product">
+    <input type="hidden" name="options[prefix]" value="last">
+    <label for="SearchInput" class="visually-hidden">{{ 'search.placeholder' | t }}</label>
+    <input id="SearchInput" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off">
+    <button type="submit" class="icon-button" aria-label="{{ 'nav.search' | t }}">{% render 'icon', name: 'search' %}</button>
+  </form>
+  <div class="search-overlay__hints">
+    {{ 'search.popular' | t }}:
+    {%- assign popular = section.settings.popular_searches | split: ',' -%}
+    {%- for term in popular -%}
+      {%- assign t = term | strip -%}
+      <a href="{{ routes.search_url }}?q={{ t | url_encode }}&type=product">{{ t }}</a>
+    {%- endfor -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Header",
+  "class": "section-header-wrapper",
+  "settings": [
+    { "type": "text", "id": "announcement", "label": "Announcement bar", "default": "Free NZ shipping over $150 · Japan Drop #004 lands 18 October" },
+    { "type": "url", "id": "announcement_link", "label": "Announcement link" },
+    { "type": "image_picker", "id": "logo", "label": "Logo" },
+    { "type": "link_list", "id": "menu", "label": "Primary menu", "default": "main-menu", "info": "NEW | DIE-CAST | MODEL KITS | PRE-ORDERS | BRANDS | DROPS | SALE. A link with handle 'sale' is shown in red." },
+    { "type": "text", "id": "popular_searches", "label": "Popular searches (comma separated)", "default": "R34, Supra, Porsche, 1:64, Liberty Walk, Aoshima" }
+  ]
+}
+{% endschema %}

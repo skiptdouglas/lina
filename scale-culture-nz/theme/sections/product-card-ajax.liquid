@@ -1,0 +1,8 @@
+{%- comment -%}
+  Internal: /products/<handle>?view=card returns one card, used by JS to build
+  the Recently Viewed and Wishlist grids.
+{%- endcomment -%}
+{% render 'product-card', product: product %}
+{% schema %}
+{ "name": "Product card (AJAX)", "settings": [] }
+{% endschema %}

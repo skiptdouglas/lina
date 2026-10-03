@@ -1,0 +1,7 @@
+{
+  "sections": {
+    "main": { "type": "main-collection", "settings": { "show_description": true } },
+    "highlights": { "type": "brand-highlights", "settings": {} }
+  },
+  "order": ["highlights", "main"]
+}

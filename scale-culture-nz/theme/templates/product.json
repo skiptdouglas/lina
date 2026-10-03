@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "main": { "type": "main-product", "settings": {} },
+    "related": { "type": "product-recommendations", "settings": { "heading": "Related models", "intent": "related" } },
+    "also-bought": { "type": "product-recommendations", "settings": { "heading": "Customers also bought", "intent": "complementary" } },
+    "recent": { "type": "recently-viewed", "settings": {} }
+  },
+  "order": ["main", "related", "also-bought", "recent"]
+}

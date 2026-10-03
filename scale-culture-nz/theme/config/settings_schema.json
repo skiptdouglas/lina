@@ -1,0 +1,50 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Scale Culture",
+    "theme_version": "1.0.0",
+    "theme_author": "Scale Culture NZ",
+    "theme_documentation_url": "https://github.com/skiptdouglas/lina/tree/main/scale-culture-nz",
+    "theme_support_url": "https://github.com/skiptdouglas/lina/issues"
+  },
+  {
+    "name": "Brand",
+    "settings": [
+      { "type": "text", "id": "tagline", "label": "Tagline", "default": "Japanese automotive culture. In miniature." },
+      { "type": "color", "id": "color_accent", "label": "Accent colour", "default": "#d7262e" },
+      { "type": "image_picker", "id": "favicon", "label": "Favicon" },
+      { "type": "image_picker", "id": "share_image", "label": "Social sharing image" }
+    ]
+  },
+  {
+    "name": "Navigation",
+    "settings": [
+      { "type": "url", "id": "shop_url", "label": "Mobile 'Shop' link", "info": "Defaults to all products." },
+      { "type": "url", "id": "drops_url", "label": "Drops page", "default": "/pages/drops" }
+    ]
+  },
+  {
+    "name": "Stock & products",
+    "settings": [
+      { "type": "range", "id": "low_stock_threshold", "label": "Low stock threshold", "min": 1, "max": 10, "step": 1, "default": 3, "info": "Shows 'Only N remaining' at or below this quantity." },
+      { "type": "range", "id": "new_badge_days", "label": "'New' badge duration (days)", "min": 7, "max": 60, "step": 1, "default": 21 }
+    ]
+  },
+  {
+    "name": "Pre-orders",
+    "settings": [
+      { "type": "textarea", "id": "preorder_disclaimer", "label": "Disclaimer (product page)", "default": "Release and arrival dates are set by the manufacturer and may change. We'll keep you updated by email." },
+      { "type": "richtext", "id": "preorder_policy", "label": "How pre-orders work", "default": "<p>Pre-orders reserve a unit from our allocation. You're charged when you order (or the deposit shown, where offered). Pre-order items ship as soon as they land in NZ, separately from in-stock items. Dates may change — if your model is delayed or cancelled by the manufacturer you can request a full refund.</p>" },
+      { "type": "textarea", "id": "preorder_shipping_note", "label": "Cart note for pre-orders", "default": "Pre-order items ship separately once they arrive in NZ." },
+      { "type": "textarea", "id": "mixed_cart_notice", "label": "Mixed cart notice", "default": "Your cart contains in-stock and pre-order items. In-stock items ship now; pre-order items ship when they land in NZ." }
+    ]
+  },
+  {
+    "name": "Shipping",
+    "settings": [
+      { "type": "number", "id": "free_shipping_threshold", "label": "Free shipping threshold (NZD, 0 to disable)", "default": 150 },
+      { "type": "text", "id": "flat_shipping_rate", "label": "Standard shipping from", "default": "$7.50" },
+      { "type": "richtext", "id": "shipping_info", "label": "Shipping information (product page)", "default": "<p><strong>NZ-wide tracked courier.</strong> Dispatched within 1–2 business days. North Island 1–2 days, South Island 2–4 days. Free shipping on orders over $150.</p><p><strong>Auckland pickup</strong> available at checkout.</p><p>Every model is packed in a rigid carton — boxes matter to collectors, and to us.</p>" }
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+{%- comment -%} Wishlist page — rendered client-side from saved handles (SOP §20) {%- endcomment -%}
+<section class="section">
+  <div class="page-width">
+    <h1>{{ 'wishlist.title' | t }}</h1>
+    <p data-wishlist-empty>{{ 'wishlist.empty' | t }}</p>
+    <ul class="product-grid product-grid--4" data-wishlist-grid></ul>
+    {%- unless customer -%}
+      <p style="margin-top:32px"><a href="{{ routes.account_login_url }}" style="text-decoration:underline">{{ 'wishlist.login_hint' | t }}</a></p>
+    {%- endunless -%}
+  </div>
+</section>
+{% schema %}
+{ "name": "Wishlist", "settings": [] }
+{% endschema %}

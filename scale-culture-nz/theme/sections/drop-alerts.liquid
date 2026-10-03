@@ -1,0 +1,73 @@
+{%- comment -%}
+  Drop Alerts signup (SOP §21). Selected interests are saved as customer tags
+  (e.g. "interest:make:nissan") which Klaviyo syncs for segmentation.
+{%- endcomment -%}
+{%- liquid
+  assign makes = section.settings.makes | split: ','
+  assign interests = section.settings.interests | split: ','
+  assign brands = section.settings.brands | split: ','
+-%}
+<section class="section section--dark drop-alerts" id="drop-alerts">
+  <div class="page-width">
+    <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+    <h2>{{ section.settings.heading }}</h2>
+    <p style="max-width:560px;color:#cfd0d2">{{ section.settings.text }}</p>
+
+    {%- form 'customer', id: 'DropAlertsForm', class: 'interest-form' -%}
+      {%- if form.posted_successfully? -%}
+        <p class="badge badge--accent" role="status">{{ 'newsletter.success' | t }}</p>
+      {%- endif -%}
+      {%- if form.errors -%}<p role="alert">{{ form.errors | default_errors }}</p>{%- endif -%}
+      <input type="hidden" name="contact[tags]" value="newsletter,drop-alerts" data-interest-tags>
+
+      {%- if section.settings.show_interests -%}
+        <fieldset>
+          <legend>{{ 'newsletter.makes' | t }}</legend>
+          <div class="chips">
+            {%- for i in makes -%}{%- assign v = i | strip -%}
+              <label class="chip"><input type="checkbox" value="interest:make:{{ v | handleize }}"><span>{{ v }}</span></label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>{{ 'newsletter.interests' | t }}</legend>
+          <div class="chips">
+            {%- for i in interests -%}{%- assign v = i | strip -%}
+              <label class="chip"><input type="checkbox" value="interest:type:{{ v | handleize }}"><span>{{ v }}</span></label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>{{ 'newsletter.brands' | t }}</legend>
+          <div class="chips">
+            {%- for i in brands -%}{%- assign v = i | strip -%}
+              <label class="chip"><input type="checkbox" value="interest:brand:{{ v | handleize }}"><span>{{ v }}</span></label>
+            {%- endfor -%}
+          </div>
+        </fieldset>
+      {%- endif -%}
+
+      <div class="field-row">
+        <label for="DropAlertsEmail" class="visually-hidden">{{ 'newsletter.email' | t }}</label>
+        <input id="DropAlertsEmail" type="email" name="contact[email]" required autocomplete="email" placeholder="{{ 'newsletter.email' | t }}">
+        <button type="submit" class="button button--accent">{{ 'newsletter.submit' | t }}</button>
+      </div>
+    {%- endform -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Drop alerts",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Never miss a drop" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Drop alerts" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Tell us what you collect. We'll only send you the drops you care about." },
+    { "type": "checkbox", "id": "show_interests", "label": "Ask for interests", "default": true },
+    { "type": "textarea", "id": "makes", "label": "Vehicle brands (comma separated)", "default": "Nissan, Toyota, Honda, Mazda, Mitsubishi, Subaru, Porsche, BMW" },
+    { "type": "textarea", "id": "interests", "label": "Product interests (comma separated)", "default": "1:64, 1:43, 1:24, 1:18, Plastic kits, Motorsport, JDM" },
+    { "type": "textarea", "id": "brands", "label": "Model brands (comma separated)", "default": "INNO64, MINI GT, Kaido House, POP RACE, Tarmac Works, Tomica Limited Vintage" }
+  ],
+  "presets": [{ "name": "Drop alerts" }]
+}
+{% endschema %}

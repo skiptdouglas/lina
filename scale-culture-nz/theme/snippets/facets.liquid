@@ -1,0 +1,48 @@
+{%- comment -%}
+  Storefront filters (SOP §23). Filter list is configured in the Shopify
+  Search & Discovery app: Availability, Brand (vendor), Price, Product type,
+  and metafields scale.scale / vehicle_make / vehicle_model / country_of_origin /
+  motorsport_category / street_race / limited_edition / availability.
+  Params: results (collection or search), url (base URL for clearing)
+{%- endcomment -%}
+<form class="facets" id="Facets" data-facets method="get">
+  <div class="facets__header">
+    <h2 style="margin:0;font-size:1.5rem">{{ 'filters.title' | t }}</h2>
+    <button type="button" class="icon-button" data-facets-close aria-label="{{ 'general.close' | t }}">{% render 'icon', name: 'close' %}</button>
+  </div>
+  <div class="facets__body">
+    {%- if results.terms -%}<input type="hidden" name="q" value="{{ results.terms | escape }}"><input type="hidden" name="type" value="product">{%- endif -%}
+    {%- if results.sort_by -%}<input type="hidden" name="sort_by" value="{{ results.sort_by }}">{%- endif -%}
+    {%- for filter in results.filters -%}
+      <details class="facet"{% if forloop.index <= 3 or filter.active_values.size > 0 %} open{% endif %}>
+        <summary>{{ filter.label }}{% if filter.active_values.size > 0 %} ({{ filter.active_values.size }}){% endif %}</summary>
+        {%- case filter.type -%}
+          {%- when 'price_range' -%}
+            <div class="facet__price">
+              <label class="visually-hidden" for="{{ filter.min_value.param_name }}">{{ 'filters.from' | t }}</label>
+              <input class="input" type="number" inputmode="decimal" id="{{ filter.min_value.param_name }}" name="{{ filter.min_value.param_name }}" placeholder="$0"{% if filter.min_value.value %} value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"{% endif %}>
+              <label class="visually-hidden" for="{{ filter.max_value.param_name }}">{{ 'filters.to' | t }}</label>
+              <input class="input" type="number" inputmode="decimal" id="{{ filter.max_value.param_name }}" name="{{ filter.max_value.param_name }}" placeholder="{{ filter.range_max | money_without_currency | replace: ',', '' }}"{% if filter.max_value.value %} value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"{% endif %}>
+            </div>
+          {%- else -%}
+            <ul>
+              {%- for value in filter.values -%}
+                <li>
+                  <label>
+                    <input type="checkbox" name="{{ value.param_name }}" value="{{ value.value }}"{% if value.active %} checked{% endif %}{% if value.count == 0 and value.active == false %} disabled{% endif %}>
+                    <span>{{ value.label }}</span>
+                    <small>{{ value.count }}</small>
+                  </label>
+                </li>
+              {%- endfor -%}
+            </ul>
+        {%- endcase -%}
+      </details>
+    {%- endfor -%}
+    <noscript><button type="submit" class="button button--full" style="margin-top:16px">{{ 'filters.apply' | t }}</button></noscript>
+  </div>
+  <div class="facets__footer">
+    <a href="{{ url }}" class="button button--outline">{{ 'filters.clear' | t }}</a>
+    <button type="button" class="button" data-facets-close>{{ 'filters.show_results' | t }}</button>
+  </div>
+</form>

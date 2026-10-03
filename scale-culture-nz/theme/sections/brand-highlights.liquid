@@ -1,0 +1,81 @@
+{%- comment -%}
+  Brand page groups (SOP §8): new releases, pre-orders, sold out.
+  "Available products" is the filterable main grid on the same template.
+{%- endcomment -%}
+{%- liquid
+  assign days_new = settings.new_badge_days | default: 21 | times: 86400
+  assign now_ts = 'now' | date: '%s' | plus: 0
+  assign new_html = ''
+  assign pre_html = ''
+  assign sold_html = ''
+  assign new_n = 0
+  assign pre_n = 0
+  assign sold_n = 0
+-%}
+{%- paginate collection.products by 250 -%}
+  {%- for p in collection.products -%}
+    {%- liquid
+      capture st
+        render 'stock-state', product: p
+      endcapture
+      assign st = st | strip
+      assign pub = p.published_at | date: '%s' | plus: 0
+      assign age = now_ts | minus: pub
+      capture card
+        echo '<li>'
+        render 'product-card', product: p
+        echo '</li>'
+      endcapture
+      if st == 'preorder'
+        if pre_n < 8
+          assign pre_html = pre_html | append: card
+          assign pre_n = pre_n | plus: 1
+        endif
+      elsif st == 'sold_out' or st == 'discontinued'
+        if sold_n < 8
+          assign sold_html = sold_html | append: card
+          assign sold_n = sold_n | plus: 1
+        endif
+      elsif age < days_new
+        if new_n < 8
+          assign new_html = new_html | append: card
+          assign new_n = new_n | plus: 1
+        endif
+      endif
+    -%}
+  {%- endfor -%}
+{%- endpaginate -%}
+
+{%- if new_n > 0 -%}
+  <section class="section" style="padding-bottom:0">
+    <div class="page-width">
+      <div class="section-header"><h2>{{ 'brands.new_releases' | t }}</h2></div>
+      <ul class="product-grid product-grid--4">{{ new_html }}</ul>
+    </div>
+  </section>
+{%- endif -%}
+{%- if pre_n > 0 -%}
+  <section class="section" style="padding-bottom:0">
+    <div class="page-width">
+      <div class="section-header"><h2>{{ 'brands.preorders' | t }}</h2></div>
+      <ul class="product-grid product-grid--4">{{ pre_html }}</ul>
+    </div>
+  </section>
+{%- endif -%}
+{%- if sold_n > 0 and section.settings.show_sold_out -%}
+  <section class="section section--grey">
+    <div class="page-width">
+      <div class="section-header"><h2>{{ 'brands.sold_out' | t }}</h2></div>
+      <ul class="product-grid product-grid--4">{{ sold_html }}</ul>
+    </div>
+  </section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Brand highlights",
+  "settings": [
+    { "type": "checkbox", "id": "show_sold_out", "label": "Show sold-out products", "default": true }
+  ]
+}
+{% endschema %}

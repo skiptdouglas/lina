@@ -1,0 +1,64 @@
+{%- comment -%}
+  SEO: unique title + meta description per page (SOP §32), Open Graph, and
+  Product JSON-LD with structured vehicle information.
+{%- endcomment -%}
+{%- liquid
+  assign og_title = page_title | default: shop.name
+  assign og_type = 'website'
+  assign og_image = settings.share_image
+  if request.page_type == 'product'
+    assign og_type = 'product'
+    assign og_image = product.featured_media
+  elsif request.page_type == 'collection' and collection.image
+    assign og_image = collection.image
+  endif
+-%}
+<title>
+  {{ page_title }}
+  {%- if current_tags %} &ndash; {{ current_tags | join: ', ' }}{% endif -%}
+  {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
+  {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+</title>
+{%- if page_description -%}
+  <meta name="description" content="{{ page_description | escape }}">
+{%- endif -%}
+
+<meta property="og:site_name" content="{{ shop.name }}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:title" content="{{ og_title | escape }}">
+<meta property="og:type" content="{{ og_type }}">
+<meta property="og:description" content="{{ page_description | default: settings.tagline | escape }}">
+{%- if og_image -%}
+  <meta property="og:image" content="https:{{ og_image | image_url: width: 1200 }}">
+{%- endif -%}
+<meta name="twitter:card" content="summary_large_image">
+
+{%- if request.page_type == 'product' -%}
+  {%- assign current_variant = product.selected_or_first_available_variant -%}
+  {%- assign m = product.metafields.scale -%}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": {{ product.title | json }},
+      "sku": {{ current_variant.sku | json }},
+      {%- if current_variant.barcode != blank %}"gtin": {{ current_variant.barcode | json }},{% endif %}
+      "brand": { "@type": "Brand", "name": {{ product.vendor | json }} },
+      "description": {{ product.description | strip_html | truncatewords: 60 | json }},
+      "image": [{% for media in product.media limit: 5 %}"https:{{ media | image_url: width: 1200 }}"{% unless forloop.last %},{% endunless %}{% endfor %}],
+      {%- if m.mpn != blank %}"mpn": {{ m.mpn.value | json }},{% endif %}
+      "additionalProperty": [
+        { "@type": "PropertyValue", "name": "Scale", "value": {{ m.scale.value | default: '' | json }} },
+        { "@type": "PropertyValue", "name": "Vehicle manufacturer", "value": {{ m.vehicle_make.value | default: '' | json }} },
+        { "@type": "PropertyValue", "name": "Vehicle model", "value": {{ m.vehicle_model.value | default: '' | json }} }
+      ],
+      "offers": {
+        "@type": "Offer",
+        "url": "{{ shop.url }}{{ product.url }}",
+        "priceCurrency": {{ cart.currency.iso_code | json }},
+        "price": {{ current_variant.price | divided_by: 100.0 | json }},
+        "availability": "https://schema.org/{% if m.availability == 'preorder' %}PreOrder{% elsif m.availability == 'discontinued' %}Discontinued{% elsif current_variant.available %}InStock{% else %}OutOfStock{% endif %}"
+      }
+    }
+  </script>
+{%- endif -%}

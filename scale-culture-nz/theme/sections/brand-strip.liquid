@@ -1,0 +1,56 @@
+{%- comment -%} Brand grid (SOP §8). Blocks point at brand collections (template: collection.brand). {%- endcomment -%}
+<section class="section section--dark">
+  <div class="page-width">
+    <div class="section-header">
+      <div><p class="eyebrow">{{ section.settings.eyebrow }}</p><h2>{{ section.settings.heading }}</h2></div>
+      <a href="{{ section.settings.all_link }}">{{ 'general.view_all' | t }}</a>
+    </div>
+    <div class="brand-strip">
+      {%- for block in section.blocks -%}
+        {%- assign c = block.settings.collection -%}
+        {%- assign logo = c.metafields.scale.brand_logo.value -%}
+        <a href="{{ c.url | default: '#' }}" {{ block.shopify_attributes }}>
+          {%- if logo != blank -%}
+            {{ logo | image_url: width: 300 | image_tag: loading: 'lazy', alt: c.title }}
+          {%- else -%}
+            {{ block.settings.name | default: c.title }}
+          {%- endif -%}
+        </a>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Brand grid",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Curated makers" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Shop by brand" },
+    { "type": "url", "id": "all_link", "label": "View all link", "default": "/pages/brands" }
+  ],
+  "blocks": [
+    {
+      "type": "brand",
+      "name": "Brand",
+      "settings": [
+        { "type": "collection", "id": "collection", "label": "Brand collection" },
+        { "type": "text", "id": "name", "label": "Name (if no logo)" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Brand grid",
+      "blocks": [
+        { "type": "brand", "settings": { "name": "INNO64" } },
+        { "type": "brand", "settings": { "name": "MINI GT" } },
+        { "type": "brand", "settings": { "name": "Kaido House" } },
+        { "type": "brand", "settings": { "name": "Tarmac Works" } },
+        { "type": "brand", "settings": { "name": "POP RACE" } },
+        { "type": "brand", "settings": { "name": "Aoshima" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

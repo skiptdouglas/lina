@@ -1,0 +1,15 @@
+{%- comment -%}
+  Wishlist toggle (SOP §20). Phase 1 stores handles in localStorage and syncs
+  to a customer metafield via an app proxy when one is configured (see docs).
+  Params: product, style: 'icon' | 'full'
+{%- endcomment -%}
+<button
+  type="button"
+  class="{% if style == 'full' %}wishlist-button{% else %}wishlist-toggle{% endif %}"
+  data-wishlist-toggle="{{ product.handle }}"
+  aria-pressed="false"
+  aria-label="{{ 'wishlist.add' | t }}: {{ product.title | escape }}"
+>
+  {% render 'icon', name: 'heart' %}
+  {%- if style == 'full' -%}<span data-wishlist-label>{{ 'wishlist.add' | t }}</span>{%- endif -%}
+</button>
