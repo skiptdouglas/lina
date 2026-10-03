@@ -6,11 +6,11 @@ The Phase 1 and Phase 2 build for the Scale Culture NZ website SOP. It is a prem
 Shopify Online Store 2.0 theme, plus the catalogue data model and the tooling the owner
 uses to run the store.
 
-> This directory is self-contained and unrelated to the Lina/JumpServer app in the
-> repository root. Nothing here is part of the Vite build.
+> New here? Start with [`HANDOFF.md`](HANDOFF.md): project status, launch order and open decisions.
 
 ```
 scale-culture-nz/
+├── HANDOFF.md                  status, launch order, open decisions — start here
 ├── theme/                      Shopify OS 2.0 theme (push with Shopify CLI)
 │   ├── layout/theme.liquid
 │   ├── sections/               hero, product rail, shop-by-scale, drops, brands, filters, cart…
