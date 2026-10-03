@@ -78,6 +78,14 @@ Install **Shopify Search & Discovery**, which is free and made by Shopify.
 - [ ] **Complementary products** (shown as "Customers also bought"): pair display cases with
       1:64 cars, and paint with kits.
 
+## 4b. Journal (§33)
+
+- [ ] Online Store → Blog posts → Manage blogs → create a blog with the handle `journal`.
+- [ ] Footer menu `footer-journal`: link the Journal and its tags, such as Collector guides,
+      Brand guides, Build guides and New releases.
+- [ ] On each article, fill in **Shop this story** (`scale.products`) with the models it
+      mentions.
+
 ## 5. Navigation (§4)
 
 Online Store → Navigation:

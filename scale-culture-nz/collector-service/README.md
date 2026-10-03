@@ -43,6 +43,7 @@ Shopify forwards `/apps/collector/<path>` on the storefront to `/proxy/<path>` h
 | POST | `/proxy/wishlist` | `{handle, product_id, saved}` or `{merge:[handles]}` | Sync the wishlist and adjust the demand count |
 | POST | `/webhooks` | Shopify webhook | `orders/create` marks pre-ordered items, `orders/fulfilled` marks items owned, `customers/redact` removes the public profile |
 | GET | `/auth`, `/auth/callback` | | One-time OAuth install that stores the Admin token |
+| GET | `/dashboard`, `/dashboard.json` | | Owner dashboard (HTTP Basic auth, user `owner`, password `DASHBOARD_PASSWORD`; returns 404 when unset) |
 | GET | `/health` | | Liveness check |
 
 ## Setup
@@ -66,6 +67,17 @@ Shopify forwards `/apps/collector/<path>` on the storefront to `/proxy/<path>` h
    metafields and the `collector` metaobject, then `npm run register-webhooks`.
 5. **Turn it on in the theme.** Theme settings → *Collector features* → enable, and add the
    Klaviyo public key.
+
+## Owner dashboard
+
+Set `DASHBOARD_PASSWORD` (and optionally `LOW_STOCK_THRESHOLD`), then open
+`https://<SERVICE_URL>/dashboard`. Bookmark it on your phone: the layout is single-column on
+mobile and refreshes every 5 minutes. Data is cached for 60 seconds.
+
+It reads the last 60 days of orders, every product (with stock, availability and wishlist
+demand) and the drops. It needs the `read_orders`, `read_products` and `read_inventory`
+scopes. Product views and conversion aren't available from the Admin API, so the dashboard
+links to the Shopify report instead.
 
 ## Tests
 

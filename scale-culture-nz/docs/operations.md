@@ -94,6 +94,10 @@ settings → Pre-orders). Charging a deposit at checkout needs a selling-plan ap
 
 ## Daily dashboard (§35)
 
+The **owner dashboard** at `<collector service>/dashboard` shows everything below on one
+page (see `collector-service/README.md`). The table lists where each number lives in
+Shopify, if you want to dig deeper.
+
 | Question | Where |
 |---|---|
 | Today's sales | Shopify Home / Analytics |

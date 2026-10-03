@@ -89,6 +89,11 @@ export const COLLECTOR_METAOBJECT = {
   ]
 };
 
+// Journal articles link straight to stock (SOP §33)
+export const ARTICLE_METAFIELDS = [
+  { key: 'products', name: 'Shop this story', type: 'list.product_reference', description: 'Products featured in the article' }
+];
+
 export const COLLECTION_METAFIELDS = [
   { key: 'brand_logo', name: 'Brand logo', type: 'file_reference', fileTypes: ['Image'] }
 ];

@@ -61,5 +61,20 @@
     </div>
     <div class="card__stock">{% render 'stock-status', product: product, state: state %}</div>
     {% render 'rating', product: product %}
+    {%- if settings.quick_add and product.has_only_default_variant -%}
+      {%- if state == 'in_stock' or state == 'low_stock' or state == 'preorder' -%}
+        <form action="{{ routes.cart_add_url }}" method="post" class="quick-add" data-ajax-cart>
+          <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+          <input type="hidden" name="quantity" value="1">
+          {%- if state == 'preorder' -%}
+            <input type="hidden" name="properties[_preorder]" value="true">
+            {%- if m.preorder_nz_arrival != blank -%}<input type="hidden" name="properties[Expected NZ arrival]" value="{{ m.preorder_nz_arrival.value | escape }}">{%- endif -%}
+          {%- endif -%}
+          <button type="submit" class="quick-add__button{% if state == 'preorder' %} quick-add__button--pre{% endif %}">
+            {%- if state == 'preorder' -%}{{ 'products.reserve' | t }}{%- else -%}{{ 'products.quick_add' | t }}{%- endif -%}
+          </button>
+        </form>
+      {%- endif -%}
+    {%- endif -%}
   </div>
 </article>

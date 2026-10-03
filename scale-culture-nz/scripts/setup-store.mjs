@@ -12,7 +12,7 @@
 // Token scopes: write_products, write_metaobject_definitions, write_metaobjects, write_publications
 
 import {
-  NAMESPACE, PRODUCT_METAFIELDS, COLLECTION_METAFIELDS, CUSTOMER_METAFIELDS, DROP_METAOBJECT, COLLECTOR_METAOBJECT, BRANDS, EDITORIAL_COLLECTIONS,
+  NAMESPACE, PRODUCT_METAFIELDS, COLLECTION_METAFIELDS, CUSTOMER_METAFIELDS, ARTICLE_METAFIELDS, DROP_METAOBJECT, COLLECTOR_METAOBJECT, BRANDS, EDITORIAL_COLLECTIONS,
   KIT_CATEGORIES, ACCESSORY_CATEGORIES, VEHICLE_MAKES, handleize
 } from './catalogue-schema.mjs';
 
@@ -207,5 +207,6 @@ const metaobjectIds = {
 const productMf = await createMetafields('PRODUCT', PRODUCT_METAFIELDS, metaobjectIds);
 await createMetafields('COLLECTION', COLLECTION_METAFIELDS, metaobjectIds);
 await createMetafields('CUSTOMER', CUSTOMER_METAFIELDS, metaobjectIds);
+await createMetafields('ARTICLE', ARTICLE_METAFIELDS, metaobjectIds);
 await createCollections(productMf);
 console.log('\nDone. Next: enable filters in Search & Discovery (see docs/setup.md).');

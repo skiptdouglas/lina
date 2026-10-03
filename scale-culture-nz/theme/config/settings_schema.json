@@ -72,6 +72,18 @@
         "max": 60,
         "step": 1,
         "default": 21
+      },
+      {
+        "type": "checkbox",
+        "id": "quick_add",
+        "label": "Quick add on product cards",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_drawer",
+        "label": "Open slide-out cart after adding",
+        "default": true
       }
     ]
   },

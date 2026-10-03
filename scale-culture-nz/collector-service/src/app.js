@@ -2,7 +2,8 @@
 // /apps/collector/* to <SERVICE_URL>/proxy/* (app proxy), signed and carrying the
 // logged-in customer id, so the customer identity can't be forged from the browser.
 
-import { createHmac, randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { buildDashboard, fetchDashboardData, renderDashboard } from './dashboard.js';
 import {
   upsertGarage, applyOrderStatus, garageStats, sanitizeProfile, mergeWishlist, publicProfile,
   snapshotFromProduct, handleize, HttpError
@@ -11,10 +12,29 @@ import { verifyProxySignature, verifyWebhook, verifyOAuthHmac, isShopDomain, exc
 import { klaviyoProperties } from './klaviyo.js';
 
 const MAX_BODY = 64 * 1024;
-const OAUTH_SCOPES = 'read_customers,write_customers,read_products,write_products,write_metaobjects,read_metaobjects,read_orders';
+const OAUTH_SCOPES = 'read_customers,write_customers,read_products,write_products,write_metaobjects,read_metaobjects,read_orders,read_inventory';
 
-export function createApp({ config, admin, klaviyo, saveToken = async () => {}, log = console }) {
+export function createApp({ config, admin, klaviyo, saveToken = async () => {}, log = console, now = () => new Date() }) {
   const oauthStates = new Map();
+  let dashboardCache = null;
+
+  /** Owner dashboard behind HTTP Basic auth (user "owner", DASHBOARD_PASSWORD). Disabled when unset. */
+  function dashboardAuthorized(req) {
+    const header = String(req.headers.authorization || '');
+    if (!header.startsWith('Basic ')) return false;
+    const [, password = ''] = Buffer.from(header.slice(6), 'base64').toString('utf8').split(/:(.*)/s);
+    const a = createHmac('sha256', 'cmp').update(password).digest();
+    const b = createHmac('sha256', 'cmp').update(config.dashboardPassword).digest();
+    return timingSafeEqual(a, b);
+  }
+
+  async function dashboard() {
+    if (dashboardCache && now().getTime() - dashboardCache.at < 60000) return dashboardCache.data;
+    const raw = await fetchDashboardData(admin, { now: now() });
+    const data = buildDashboard(raw, { now: now(), lowStockThreshold: config.lowStockThreshold || 3 });
+    dashboardCache = { at: now().getTime(), data };
+    return data;
+  }
 
   const ownerHash = (customerId) => createHmac('sha256', config.apiSecret).update(`collector:${customerId}`).digest('hex').slice(0, 24);
 
@@ -194,6 +214,17 @@ export function createApp({ config, admin, klaviyo, saveToken = async () => {}, 
     try {
       if (url.pathname === '/health') return send(200, { ok: true });
       if (url.pathname === '/auth' || url.pathname === '/auth/callback') return await handleAuth(url, res);
+      if (url.pathname === '/dashboard' || url.pathname === '/dashboard.json') {
+        if (!config.dashboardPassword) throw new HttpError(404, 'not found');
+        if (!dashboardAuthorized(req)) {
+          res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Scale Culture owner", charset="UTF-8"' });
+          return res.end();
+        }
+        const data = await dashboard();
+        if (url.pathname === '/dashboard.json') return send(200, data);
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY' });
+        return res.end(renderDashboard(data, { shop: config.shop, lowStockThreshold: config.lowStockThreshold || 3 }));
+      }
 
       const raw = req.method === 'POST' ? await readBody(req) : Buffer.alloc(0);
       if (url.pathname === '/webhooks' && req.method === 'POST') return send(200, await handleWebhook(req, raw));

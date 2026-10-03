@@ -1,0 +1,93 @@
+{%- comment -%}
+  Slide-out cart (SOP §24, §31). Re-rendered through the Section Rendering API
+  after every add/change so totals and the pre-order split stay server-side.
+{%- endcomment -%}
+{%- liquid
+  assign preorder_count = 0
+  for item in cart.items
+    if item.properties['_preorder'] == 'true'
+      assign preorder_count = preorder_count | plus: 1
+    endif
+  endfor
+  assign stock_count = cart.items.size | minus: preorder_count
+  assign threshold = settings.free_shipping_threshold | times: 100
+  assign remaining = threshold | minus: cart.total_price
+  assign pct = 0
+  if threshold > 0
+    assign pct = cart.total_price | times: 100 | divided_by: threshold
+    if pct > 100
+      assign pct = 100
+    endif
+  endif
+-%}
+<div class="drawer__panel" role="dialog" aria-modal="true" aria-labelledby="CartDrawerTitle" data-cart-count-value="{{ cart.item_count }}">
+  <div class="drawer__header">
+    <h2 id="CartDrawerTitle">{{ 'cart.title' | t }} <span>({{ cart.item_count }})</span></h2>
+    <button type="button" class="icon-button" data-drawer-close aria-label="{{ 'general.close' | t }}">{% render 'icon', name: 'close' %}</button>
+  </div>
+
+  {%- if cart.item_count == 0 -%}
+    <div class="drawer__body drawer__empty">
+      <p>{{ 'cart.empty' | t }}</p>
+      <a href="/collections/new-arrivals" class="button button--accent">{{ 'cart.continue' | t }}</a>
+    </div>
+  {%- else -%}
+    {%- if threshold > 0 -%}
+      <div class="drawer__shipping">
+        <small>
+          {%- if remaining > 0 -%}{%- assign remaining_money = remaining | money -%}{{ 'cart.free_shipping_remaining' | t: amount: remaining_money }}
+          {%- else -%}{{ 'cart.free_shipping_unlocked' | t }}{%- endif -%}
+        </small>
+        <div class="shipping-bar" aria-hidden="true"><span style="width:{{ pct }}%"></span></div>
+      </div>
+    {%- endif -%}
+
+    <div class="drawer__body">
+      {%- if preorder_count > 0 and stock_count > 0 -%}
+        <div class="cart-notice" role="note">{{ settings.mixed_cart_notice }}</div>
+      {%- endif -%}
+      <ul class="drawer__items">
+        {%- for item in cart.items -%}
+          {%- assign is_pre = false -%}
+          {%- if item.properties['_preorder'] == 'true' -%}{%- assign is_pre = true -%}{%- endif -%}
+          <li class="drawer-item" data-line-key="{{ item.key }}">
+            <a href="{{ item.url }}" class="drawer-item__media">
+              {%- if item.image -%}{{ item.image | image_url: width: 200 | image_tag: loading: 'lazy', alt: item.product.title }}{%- endif -%}
+            </a>
+            <div class="drawer-item__info">
+              <span class="card__brand">{{ item.vendor }}</span>
+              <a href="{{ item.url }}" class="drawer-item__title">{{ item.product.metafields.scale.card_title.value | default: item.product.title }}</a>
+              <span class="cart-item__meta">
+                {{ item.product.metafields.scale.scale.value }}
+                {%- unless item.product.has_only_default_variant %} · {{ item.variant.title }}{% endunless -%}
+              </span>
+              {%- if is_pre -%}<span class="badge badge--accent" style="justify-self:start">{{ 'products.stock.preorder' | t }}</span>{%- endif -%}
+              <div class="drawer-item__row">
+                <div class="qty qty--sm">
+                  <button type="button" data-line-change="{{ item.quantity | minus: 1 }}" aria-label="{{ 'products.decrease' | t }}">−</button>
+                  <span aria-live="polite">{{ item.quantity }}</span>
+                  <button type="button" data-line-change="{{ item.quantity | plus: 1 }}" aria-label="{{ 'products.increase' | t }}">+</button>
+                </div>
+                <strong>{{ item.final_line_price | money }}</strong>
+              </div>
+              <button type="button" class="drawer-item__remove" data-line-change="0">{{ 'cart.remove' | t }}</button>
+            </div>
+          </li>
+        {%- endfor -%}
+      </ul>
+    </div>
+
+    <div class="drawer__footer">
+      <div class="cart-summary__row cart-summary__total"><span>{{ 'cart.subtotal' | t }}</span><span>{{ cart.total_price | money }}</span></div>
+      <small>{{ 'cart.taxes' | t }}{% if preorder_count > 0 %} {{ settings.preorder_shipping_note }}{% endif %}</small>
+      <form action="{{ routes.cart_url }}" method="post">
+        <button type="submit" name="checkout" class="button button--accent button--full">{{ 'cart.checkout' | t }}</button>
+      </form>
+      <a href="{{ routes.cart_url }}" class="drawer__view-cart">{{ 'cart.view' | t }}</a>
+    </div>
+  {%- endif -%}
+  <p class="drawer__error" role="alert" data-cart-error hidden></p>
+</div>
+{% schema %}
+{ "name": "Cart drawer", "settings": [] }
+{% endschema %}

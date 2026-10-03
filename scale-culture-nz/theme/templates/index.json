@@ -177,6 +177,12 @@
         "fallback": "jdm-legends",
         "fallback_heading": "Collector favourites"
       }
+    },
+    "journal": {
+      "type": "journal-rail",
+      "settings": {
+        "blog": "journal"
+      }
     }
   },
   "order": [
@@ -188,6 +194,7 @@
     "preorders",
     "collections",
     "brands",
+    "journal",
     "trust"
   ]
 }

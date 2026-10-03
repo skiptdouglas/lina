@@ -23,11 +23,13 @@ scale-culture-nz/
 │   ├── catalogue-schema.mjs    the product data standard: scales, makes, models, metafields
 │   ├── setup-store.mjs         creates metafields, the Drop metaobject and ~90 smart collections
 │   └── validate-catalogue.mjs  checks a product CSV against the SOP before import
+├── preview/                  renders the real theme with sample data → static pages + screenshots
 ├── collector-service/          Phase 2 backend (Shopify app proxy): My Garage, profiles, synced wishlist
 ├── data/product-import-template.csv
 └── docs/
     ├── setup.md                launch checklist (Shopify, apps, payments, shipping, SEO)
     ├── operations.md           adding stock, inventory workflow, drops, pre-orders, reporting
+    ├── screenshots/            generated previews (desktop + mobile)
     ├── phase-2.md              collector features: My Garage, profiles, alerts, recommendations, reviews
     └── sop-coverage.md         every SOP section → where it's implemented
 ```
@@ -103,3 +105,30 @@ Phase 2 adds the collector features:
 To set it up, read [`docs/phase-2.md`](docs/phase-2.md) and
 [`collector-service/README.md`](collector-service/README.md). These features stay switched
 off in theme settings until the collector service is deployed.
+
+## See it
+
+Open the screenshots in [`docs/screenshots/`](docs/screenshots/). To build them yourself,
+run `cd preview && npm install && npm run build`, then open `preview/dist/index.html`.
+
+| Home | Product | Cart drawer (mobile) |
+|---|---|---|
+| ![](docs/screenshots/home-desktop.jpg) | ![](docs/screenshots/product-desktop.jpg) | ![](docs/screenshots/cart-drawer-mobile.jpg) |
+
+## Also included
+
+- **Journal** (§33). Blog and article templates with a "Shop this story" product rail,
+  driven by the `scale.products` article field, plus a "From the journal" homepage section.
+- **Slide-out cart and quick add.** "+ Add" or "Reserve yours" right on product cards. The
+  product page adds to the cart without a page reload, and the slide-out cart shows the
+  free-shipping progress bar and the pre-order split. Both can be switched off in theme
+  settings.
+- **Owner dashboard** (§34–35). It runs at `<collector service>/dashboard`, behind a
+  password, and shows:
+  - today's sales, orders awaiting fulfilment, open pre-orders, low and incoming stock
+  - 30-day revenue per day
+  - best sellers, and revenue by brand, vehicle manufacturer and scale
+  - sell-through per drop
+  - sold-out models with wishlist demand
+
+  Set `DASHBOARD_PASSWORD` to enable it. See `collector-service/README.md`.

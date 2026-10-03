@@ -173,3 +173,18 @@ test('auto_garage off skips order sync', async () => {
   const r = await call('POST', '/webhooks', raw, { 'x-shopify-topic': 'orders/fulfilled', 'x-shopify-hmac-sha256': hmac });
   assert.equal(r.body.skipped, 'auto_garage off');
 });
+
+test('dashboard is disabled without a password and requires basic auth', async () => {
+  assert.equal((await call('GET', '/dashboard')).status, 404);
+});
+
+test('dashboard: basic auth gate', async () => {
+  const gated = createApp({ config: { ...config, dashboardPassword: 'pw' }, admin, klaviyo: { updateProfile: async () => {} }, log: { error() {}, warn() {} } });
+  const req = (auth) => {
+    const r = Readable.from([]);
+    Object.assign(r, { method: 'GET', url: '/dashboard.json', headers: auth ? { authorization: `Basic ${Buffer.from(auth).toString('base64')}` } : {} });
+    return new Promise((resolve) => gated(r, { writeHead(s) { this.s = s; }, end() { resolve(this.s); } }));
+  };
+  assert.equal(await req(null), 401);
+  assert.equal(await req('owner:wrong'), 401);
+});

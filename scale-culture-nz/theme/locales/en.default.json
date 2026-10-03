@@ -50,7 +50,8 @@
       "incoming": "Incoming",
       "sold_out": "Sold out",
       "discontinued": "Discontinued"
-    }
+    },
+    "quick_add": "+ Add"
   },
   "preorder": {
     "jp_release": "Expected Japanese release",
@@ -171,7 +172,8 @@
     "total": "Total",
     "taxes": "Prices include GST. Shipping calculated at checkout.",
     "checkout": "Checkout",
-    "update": "Update cart"
+    "update": "Update cart",
+    "view": "View full cart"
   },
   "account": {
     "welcome": "My account",
@@ -255,5 +257,12 @@
       "one": "1 review",
       "other": "{{ count }} reviews"
     }
+  },
+  "journal": {
+    "eyebrow": "Journal",
+    "categories": "Categories",
+    "empty": "No articles yet.",
+    "shop_story": "Shop this story",
+    "more": "More from the journal"
   }
 }

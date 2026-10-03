@@ -40,10 +40,10 @@ Status key:
 | 27–28 | Shopify and integrations | ⚙️ | `setup.md` §1, §8 |
 | 29 | Inventory workflow | ✅ | `availability` field states; validator guards; `operations.md` |
 | 30 | Image standard | ✅ | Square crops in the grid; validator checks count and ALT text |
-| 31 | Mobile-first, sticky add to cart, buy in about 4 taps | ✅ | Sticky ATC above the tab bar; Apple Pay button on the product page |
+| 31 | Mobile-first, sticky add to cart, buy in about 4 taps | ✅ | Sticky ATC above the tab bar, quick add on cards, slide-out cart, Apple Pay on the product page |
 | 32 | SEO: unique titles and descriptions, structured data, ALT text | ✅ | `snippets/meta-tags.liquid` (JSON-LD), validator |
-| 33 | Journal | ⚙️ | Shopify Blog `journal`; link products inside articles |
-| 34–35 | Analytics and admin dashboard | ⚙️ | `operations.md`: reports and ShopifyQL |
+| 33 | Journal, with articles linking to products | ✅ | `templates/blog.json`, `article.json`, `sections/main-article.liquid` (Shop this story), `journal-rail` |
+| 34–35 | Analytics and admin dashboard | ✅ / ⚙️ | Owner dashboard (`collector-service/src/dashboard.js`); Shopify reports for views/conversion (`operations.md`) |
 | 36 | Phase 1 MVP | ✅ | Everything above |
 | 37 | Collector profiles | ✅ | `collector-profile-form`, public `collector` metaobject pages |
 | 37 | Advanced wishlist (synced across devices) | ✅ | Collector service `/wishlist` |

@@ -19,7 +19,9 @@ export function loadConfig(env = process.env) {
     klaviyoKey: env.KLAVIYO_PRIVATE_KEY || '',
     dataDir: env.DATA_DIR || '.data',
     port: Number(env.PORT || 8787),
-    envToken: env.SHOPIFY_ADMIN_TOKEN || ''
+    envToken: env.SHOPIFY_ADMIN_TOKEN || '',
+    dashboardPassword: env.DASHBOARD_PASSWORD || '',
+    lowStockThreshold: Number(env.LOW_STOCK_THRESHOLD || 3)
   };
 }
 

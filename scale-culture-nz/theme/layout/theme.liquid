@@ -41,6 +41,11 @@
 
     {% render 'mobile-nav' %}
 
+    <div class="drawer" id="CartDrawer" data-cart-drawer hidden>
+      <div class="drawer__overlay" data-drawer-close></div>
+      <div data-cart-drawer-content>{% section 'cart-drawer' %}</div>
+    </div>
+
     <script>
       window.ScaleCulture = {
         collector: {
@@ -51,6 +56,7 @@
           wishlist: {% if customer and settings.collector_enabled %}{% if server_wishlist %}{{ server_wishlist | json }}{% else %}[]{% endif %}{% else %}null{% endif %}
         },
         klaviyo: {{ settings.klaviyo_public_key | json }},
+        cartDrawer: {{ settings.cart_drawer | json }},
         routes: {
           cart_add_url: {{ routes.cart_add_url | json }},
           cart_url: {{ routes.cart_url | json }},

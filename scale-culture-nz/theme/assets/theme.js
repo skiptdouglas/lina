@@ -400,4 +400,110 @@
       }
     })
   );
+
+  /* Slide-out cart + AJAX add (product form, sticky ATC and card quick add) */
+  const drawer = $('[data-cart-drawer]');
+  const drawerContent = drawer && $('[data-cart-drawer-content]', drawer);
+  let lastFocus = null;
+
+  const setCartCount = (n) =>
+    $$('[data-cart-count]').forEach((el) => {
+      el.textContent = n;
+      el.hidden = Number(n) === 0;
+    });
+
+  const openDrawer = () => {
+    if (!drawer) return;
+    lastFocus = document.activeElement;
+    drawer.hidden = false;
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => drawer.classList.add('is-open'));
+    const close = $('.drawer__header [data-drawer-close]', drawer);
+    if (close) close.focus();
+  };
+  const closeDrawer = () => {
+    if (!drawer || drawer.hidden) return;
+    drawer.classList.remove('is-open');
+    document.body.style.overflow = '';
+    setTimeout(() => (drawer.hidden = true), 200);
+    if (lastFocus) lastFocus.focus();
+  };
+
+  const renderDrawer = (html) => {
+    if (!drawerContent || !html) return;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const panel = doc.querySelector('.drawer__panel');
+    if (!panel) return;
+    drawerContent.innerHTML = '';
+    drawerContent.appendChild(panel);
+    setCartCount(panel.dataset.cartCountValue);
+  };
+
+  const showCartError = (message) => {
+    const err = drawer && $('[data-cart-error]', drawer);
+    if (err) {
+      err.textContent = message;
+      err.hidden = false;
+    } else window.alert(message);
+  };
+
+  if (drawer && ctx.cartDrawer) {
+    drawer.addEventListener('click', async (e) => {
+      if (e.target.closest('[data-drawer-close]')) return closeDrawer();
+      const change = e.target.closest('[data-line-change]');
+      if (!change) return;
+      const line = change.closest('[data-line-key]');
+      change.disabled = true;
+      try {
+        const res = await fetch('/cart/change.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ id: line.dataset.lineKey, quantity: Number(change.dataset.lineChange), sections: 'cart-drawer' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.description || data.message || 'Could not update cart');
+        renderDrawer(data.sections && data.sections['cart-drawer']);
+      } catch (err) {
+        showCartError(err.message);
+        change.disabled = false;
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeDrawer();
+    });
+    // Header cart icon opens the drawer instead of navigating
+    $$('.site-header__utility a[href$="/cart"]').forEach((a) =>
+      a.addEventListener('click', (e) => {
+        e.preventDefault();
+        openDrawer();
+      })
+    );
+
+    document.addEventListener('submit', async (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement)) return;
+      if (!(form.matches('[data-ajax-cart]') || form.id === 'ProductForm')) return;
+      if (e.submitter && e.submitter.name === 'checkout') return;
+      e.preventDefault();
+      const buttons = $$(`button[type="submit"], button[form="${form.id}"]`, document).filter(
+        (b) => b.form === form
+      );
+      buttons.forEach((b) => b.setAttribute('aria-busy', 'true'));
+      try {
+        const body = new FormData(form);
+        body.append('sections', 'cart-drawer');
+        const res = await fetch('/cart/add.js', { method: 'POST', headers: { Accept: 'application/json' }, body });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.description || data.message || 'Could not add to cart');
+        renderDrawer(data.sections && data.sections['cart-drawer']);
+        openDrawer();
+        document.dispatchEvent(new CustomEvent('cart:added', { detail: data }));
+      } catch (err) {
+        openDrawer();
+        showCartError(err.message);
+      } finally {
+        buttons.forEach((b) => b.removeAttribute('aria-busy'));
+      }
+    });
+  }
 })();
