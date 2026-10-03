@@ -61,11 +61,16 @@
     </div>
     <div class="card__stock">{% render 'stock-status', product: product, state: state %}</div>
     {% render 'rating', product: product %}
-    {%- if settings.quick_add and product.has_only_default_variant -%}
+    {%- capture lim -%}{% render 'limit-state', product: product %}{%- endcapture -%}
+    {%- assign lim_parts = lim | strip | split: '|' -%}
+    {%- assign lim_max = lim_parts[0] | plus: 0 -%}
+    {%- if lim_max > 0 -%}<span class="card__limit">{{ 'limits.max_per_customer' | t: count: lim_max }}</span>{%- endif -%}
+    {%- if settings.quick_add and product.has_only_default_variant and lim_parts[2] != 'true' and lim_parts[1] != '0' -%}
       {%- if state == 'in_stock' or state == 'low_stock' or state == 'preorder' -%}
         <form action="{{ routes.cart_add_url }}" method="post" class="quick-add" data-ajax-cart>
           <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
           <input type="hidden" name="quantity" value="1">
+          {%- if lim_max > 0 -%}<input type="hidden" data-limit-product="{{ product.id }}" data-limit-remaining="{{ lim_parts[1] }}" data-limit-max="{{ lim_max }}" data-limit-title="{{ product.title | escape }}">{%- endif -%}
           {%- if state == 'preorder' -%}
             <input type="hidden" name="properties[_preorder]" value="true">
             {%- if m.preorder_nz_arrival != blank -%}<input type="hidden" name="properties[Expected NZ arrival]" value="{{ m.preorder_nz_arrival.value | escape }}">{%- endif -%}

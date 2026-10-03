@@ -22,7 +22,7 @@ const settingsSchema = JSON.parse(await readFile(join(THEME, 'config/settings_sc
 // Theme settings = schema defaults (+ preview overrides)
 const settings = {};
 for (const group of settingsSchema) for (const s of group.settings || []) if ('default' in s) settings[s.id] = s.default;
-Object.assign(settings, { collector_enabled: true, klaviyo_public_key: 'PREVIEW' });
+Object.assign(settings, { shop_url: 'collection-1-64-diecast.html', drops_url: 'drop.html', collector_enabled: true, klaviyo_public_key: 'PREVIEW', bundle_discount_collection: data.collections['display-cases'], bundle_fallback_collection: data.collections['display-cases'], cart_upsell_collection: data.collections['display-cases'] });
 
 const engine = new Liquid({ root: [join(THEME, 'snippets')], extname: '.liquid', strictFilters: false, strictVariables: false, jsTruthy: false });
 
@@ -149,6 +149,21 @@ async function renderSection(id, type, conf, scope) {
 }
 
 /* ---------- Pages ---------- */
+// Point Shopify-style URLs at the preview's static files so the pages link together.
+function rewriteLinks(html) {
+  return html.replace(/href="(\/[^"#?]*)([^"]*)"/g, (all, path, rest) => {
+    let m;
+    if ((m = path.match(/^\/collections\/([a-z0-9-]+)$/))) return `href="${data.collections[m[1]] ? `collection-${m[1]}.html` : 'collection-1-64-diecast.html'}"`;
+    if (path === '/collections') return 'href="collection-1-64-diecast.html"';
+    if ((m = path.match(/^\/products\/([a-z0-9-]+)$/))) return `href="product-${m[1]}.html"`;
+    if (path === '/pages/drops' || path.startsWith('/pages/drop')) return 'href="drop.html"';
+    if (path === '/pages/garage' || path === '/pages/collector-profile' || path.startsWith('/pages/collector')) return 'href="garage.html"';
+    if (path === '/pages/brands') return 'href="collection-1-64-diecast.html"';
+    if (path === '/cart') return 'href="cart.html"';
+    return `href="#"`;
+  });
+}
+
 const emptyCart = { item_count: 0, items: [], total_price: 0, items_subtotal_price: 0, cart_level_discount_applications: [], currency: { iso_code: 'NZD' } };
 const cartWith = (lines) => {
   const items = lines.map(([p, qty, pre], i) => ({
@@ -166,7 +181,7 @@ async function page(out, { template, title, pageType, extra = {}, customer = nul
     settings,
     shop: { name: 'Scale Culture NZ', url: '', metaobjects: { drop: { values: [data.drop] } } },
     routes: {
-      root_url: 'index.html', cart_url: 'cart.html', cart_add_url: 'cart.html', search_url: '#', account_url: 'garage.html', account_login_url: '#',
+      root_url: 'home.html', cart_url: 'cart.html', cart_add_url: 'cart.html', search_url: '#', account_url: 'garage.html', account_login_url: '#',
       account_register_url: '#', account_logout_url: '#', account_addresses_url: '#', collections_url: '#', all_products_collection_url: 'collection.html',
       product_recommendations_url: '#'
     },
@@ -186,7 +201,8 @@ async function page(out, { template, title, pageType, extra = {}, customer = nul
   let body = '';
   for (const id of tpl.order) body += await renderSection(id, tpl.sections[id].type, tpl.sections[id], scope);
   const layout = await readFile(join(THEME, 'layout/theme.liquid'), 'utf8');
-  const html = await engine.parseAndRender(layout, { ...scope, content_for_layout: body }, { globals: scope });
+  let html = await engine.parseAndRender(layout, { ...scope, content_for_layout: body }, { globals: scope });
+  html = rewriteLinks(html);
   await writeFile(join(DIST, out), html);
   console.log(`  ✓ ${out}`);
 }
@@ -203,7 +219,13 @@ const supra = P('poprace-a80-rocket-bunny');
 const kaido = P('kaido-house-510-wagon');
 
 console.log('Rendering preview pages:');
-await page('index.html', { template: 'index.json', title: 'Scale Culture NZ', pageType: 'index' });
+for (const p of data.products) {
+  await page(`product-${p.handle}.html`, { template: 'product.json', title: p.title, pageType: 'product', extra: { product: p } });
+}
+for (const c of Object.values(data.collections)) {
+  await page(`collection-${c.handle}.html`, { template: 'collection.json', title: c.title, pageType: 'collection', extra: { collection: c } });
+}
+await page('home.html', { template: 'index.json', title: 'Scale Culture NZ', pageType: 'index' });
 await page('product.html', { template: 'product.json', title: r34.title, pageType: 'product', extra: { product: r34 }, cart: cartWith([[supra, 1, true]]) });
 await page('product-preorder.html', { template: 'product.json', title: supra.title, pageType: 'product', extra: { product: supra } });
 await page('product-sold-out.html', { template: 'product.json', title: kaido.title, pageType: 'product', extra: { product: kaido } });

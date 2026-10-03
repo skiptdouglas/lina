@@ -56,8 +56,11 @@ const P = [
   ['tlv-skyline-kpgc10', 'Tomica Limited Vintage', 'Nissan Skyline 2000GT-R KPGC10', 'Silver', '1:64', 'Nissan', 'Skyline', 'KPGC10', 6995, 0, 'coming_soon', '#b8bcc2', 0],
   ['aoshima-fd3s-kit', 'Aoshima', 'Mazda RX-7 FD3S Spirit R Kit', 'Kit', '1:24', 'Mazda', 'RX-7', 'FD3S', 6495, 8, 'auto', '#c3262e', 12],
   ['ignition-r34-z-tune', 'Ignition Model', 'Nissan Skyline GT-R R34 Nismo Z-Tune', 'Silver', '1:18', 'Nissan', 'Skyline', 'R34', 39995, 1, 'auto', '#9ea3a8', 20],
-  ['minigt-lbwk-huracan', 'MINI GT', 'Lamborghini Huracán LB-Silhouette', 'Orange', '1:64', 'Lamborghini', 'Huracán', '', 2695, 14, 'auto', '#ef6a1f', 4]
+  ['minigt-lbwk-huracan', 'MINI GT', 'Lamborghini Huracán LB-Silhouette', 'Orange', '1:64', 'Lamborghini', 'Huracán', '', 2695, 14, 'auto', '#ef6a1f', 4],
+  ['scale-culture-display-case-1-64', 'Scale Culture', '1:64 Acrylic Display Case', 'Single', '1:64', 'Other', 'Display case', '', 1495, 40, 'auto', '#9fb4c7', 30],
+  ['scale-culture-garage-diorama-1-64', 'Scale Culture', '1:64 Garage Diorama', 'Workshop', '1:64', 'Other', 'Diorama', '', 3995, 12, 'auto', '#6b6f75', 30]
 ];
+const ACCESSORIES = new Set(['scale-culture-display-case-1-64', 'scale-culture-garage-diorama-1-64']);
 
 export const IMAGES = {};
 
@@ -95,6 +98,9 @@ function product([handle, vendor, vehicle, variant, scale, make, model, gen, pri
     limited_edition: { value: handle.includes('kaido') || handle.includes('z-tune') },
     mpn: { value: `IN64-${1000 + i}` },
     wishlist_count: { value: handle.includes('kaido') ? 32 : i },
+    // Drop-day limit on the hot INNO64 R34
+    max_per_customer: handle === 'inno64-r34-midnight-purple' ? { value: 2 } : null,
+    limit_until: handle === 'inno64-r34-midnight-purple' ? { value: new Date(NOW + 3 * DAY).toISOString().slice(0, 10) } : null,
     preorder_jp_release: availability === 'preorder' ? { value: 'November 2026' } : null,
     preorder_nz_arrival: availability === 'preorder' ? { value: 'December 2026' } : null,
     preorder_deposit: availability === 'preorder' ? { value: '$10' } : null,
@@ -107,7 +113,8 @@ function product([handle, vendor, vehicle, variant, scale, make, model, gen, pri
     handle,
     title,
     vendor,
-    type: scale === '1:24' ? 'Plastic Model Kit' : 'Die-cast',
+    type: ACCESSORIES.has(handle) ? 'Accessory' : scale === '1:24' ? 'Plastic Model Kit' : 'Die-cast',
+    collections: ACCESSORIES.has(handle) ? [{ handle: 'display-cases' }] : [],
     url: `product-${handle}.html`,
     description: `<p>${vehicle} in ${variant}. Detailed ${scale} replica with rubber tyres, detailed lights and an acrylic display case. Imported direct from Japan.</p><p>Every Scale Culture order is packed in a rigid carton — boxes matter to collectors.</p>`,
     published_at: ago(daysAgo),
@@ -129,6 +136,9 @@ function product([handle, vendor, vehicle, variant, scale, make, model, gen, pri
 
 export const products = P.map(product);
 const by = (h) => products.find((p) => p.handle === h);
+const accessories = products.filter((p) => ACCESSORIES.has(p.handle));
+by('inno64-r34-midnight-purple').metafields.scale.bundle_products = { value: accessories };
+const models = products.filter((p) => !ACCESSORIES.has(p.handle));
 
 const facet = (label, param, values) => ({
   label,
@@ -169,10 +179,11 @@ export function collection(handle, title, list, description = '') {
 }
 
 export const collections = {
-  'new-arrivals': collection('new-arrivals', 'New Arrivals', [...products].sort((a, b) => new Date(b.published_at) - new Date(a.published_at))),
-  '1-64-diecast': collection('1-64-diecast', '1:64 Die-Cast', products.filter((p) => p.metafields.scale.scale.value === '1:64'), '<p>Premium 1:64 die-cast from INNO64, MINI GT, Kaido House, POP RACE and Tarmac Works — imported direct from Japan and Hong Kong.</p>'),
+  'display-cases': collection('display-cases', 'Display Cases', accessories),
+  'new-arrivals': collection('new-arrivals', 'New Arrivals', [...models].sort((a, b) => new Date(b.published_at) - new Date(a.published_at))),
+  '1-64-diecast': collection('1-64-diecast', '1:64 Die-Cast', models.filter((p) => p.metafields.scale.scale.value === '1:64'), '<p>Premium 1:64 die-cast from INNO64, MINI GT, Kaido House, POP RACE and Tarmac Works — imported direct from Japan and Hong Kong.</p>'),
   'pre-orders': collection('pre-orders', 'Pre-Orders', [by('poprace-a80-rocket-bunny')]),
-  'jdm-legends': collection('jdm-legends', 'JDM Legends', products.slice(0, 6)),
+  'jdm-legends': collection('jdm-legends', 'JDM Legends', models.slice(0, 6)),
   'nissan-models': collection('nissan-models', 'Nissan Models', products.filter((p) => p.metafields.scale.vehicle_make.value === 'Nissan')),
   'toyota-models': collection('toyota-models', 'Toyota Models', [by('poprace-a80-rocket-bunny')]),
   'mazda-models': collection('mazda-models', 'Mazda Models', products.filter((p) => p.metafields.scale.vehicle_make.value === 'Mazda'))

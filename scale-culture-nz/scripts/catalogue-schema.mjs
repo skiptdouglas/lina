@@ -62,6 +62,12 @@ export const PRODUCT_METAFIELDS = [
   { key: 'preorder_deposit', name: 'Pre-order: deposit', type: 'single_line_text_field', description: 'e.g. $10 — leave blank if paid in full' },
   { key: 'preorder_allocation', name: 'Pre-order: total allocation', type: 'number_integer' },
   { key: 'drop', name: 'Drop', type: 'metaobject_reference', metaobject: 'drop' },
+  // Drop-day purchase limits — enforced at checkout by the purchase-limits Function
+  { key: 'max_per_customer', name: 'Limit per customer', type: 'number_integer', description: 'Max units one customer can buy. Leave blank for no limit.' },
+  { key: 'limit_until', name: 'Limit applies until', type: 'date', description: 'Last day the limit applies (inclusive, NZ time). Leave blank to keep the limit on.' },
+  { key: 'limit_requires_login', name: 'Limited: require login', type: 'boolean', description: 'Guests must log in so the limit can be tracked across orders.' },
+  // Bundles — "Complete the display" on the product page
+  { key: 'bundle_products', name: 'Bundle with', type: 'list.product_reference', description: 'Display cases, stands or paints offered with this model.' },
   // Phase 2 — maintained by the collector service, not edited by hand
   { key: 'wishlist_count', name: 'Wishlist demand (collectors)', type: 'number_integer', filter: true, description: 'Number of logged-in collectors with this model on their wishlist. Maintained automatically.' }
 ];
@@ -71,7 +77,8 @@ export const CUSTOMER_METAFIELDS = [
   { key: 'garage', name: 'My Garage', type: 'json', description: 'Owned / wanted / pre-ordered models with product snapshots' },
   { key: 'garage_stats', name: 'My Garage stats', type: 'json', description: 'Totals, by-make breakdown and model collections' },
   { key: 'profile', name: 'Collector profile', type: 'json', description: 'Display name, interests, public profile settings' },
-  { key: 'wishlist', name: 'Wishlist', type: 'json', description: 'Product handles' }
+  { key: 'wishlist', name: 'Wishlist', type: 'json', description: 'Product handles' },
+  { key: 'limited_purchases', name: 'Limited-release purchases', type: 'json', description: 'Units bought per limited product while its limit is active. Read by the purchase-limits Function.' }
 ];
 
 export const COLLECTOR_METAOBJECT = {

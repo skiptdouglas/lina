@@ -25,10 +25,15 @@
     "reviews": {
       "type": "product-reviews",
       "settings": {}
+    },
+    "bundle": {
+      "type": "product-bundle",
+      "settings": {}
     }
   },
   "order": [
     "main",
+    "bundle",
     "reviews",
     "related",
     "also-bought",

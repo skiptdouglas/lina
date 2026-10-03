@@ -6,7 +6,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { buildDashboard, fetchDashboardData, renderDashboard } from './dashboard.js';
 import {
   upsertGarage, applyOrderStatus, garageStats, sanitizeProfile, mergeWishlist, publicProfile,
-  snapshotFromProduct, handleize, HttpError
+  snapshotFromProduct, handleize, HttpError, applyLimitedPurchases, nzToday
 } from './collector.js';
 import { verifyProxySignature, verifyWebhook, verifyOAuthHmac, isShopDomain, exchangeOAuthCode } from './shopify.js';
 import { klaviyoProperties } from './klaviyo.js';
@@ -45,7 +45,8 @@ export function createApp({ config, admin, klaviyo, saveToken = async () => {}, 
       email: c.email,
       garage: Array.isArray(c.data.garage) ? c.data.garage : [],
       profile: c.data.profile && typeof c.data.profile === 'object' ? c.data.profile : sanitizeProfile({}),
-      wishlist: Array.isArray(c.data.wishlist) ? c.data.wishlist : []
+      wishlist: Array.isArray(c.data.wishlist) ? c.data.wishlist : [],
+      limited_purchases: c.data.limited_purchases && typeof c.data.limited_purchases === 'object' ? c.data.limited_purchases : {}
     };
   }
 
@@ -147,23 +148,42 @@ export function createApp({ config, admin, klaviyo, saveToken = async () => {}, 
     const topic = req.headers['x-shopify-topic'];
     const payload = JSON.parse(raw.toString('utf8') || '{}');
 
-    if (topic === 'orders/create' || topic === 'orders/fulfilled') {
+    if (topic === 'orders/create' || topic === 'orders/fulfilled' || topic === 'orders/cancelled') {
       const customerId = payload.customer?.id;
       if (!customerId) return { ok: true };
       const lines = (payload.line_items || []).filter((l) => l.product_id);
-      const isPre = (l) => (l.properties || []).some((p) => p.name === '_preorder' && String(p.value) === 'true');
-      const targets = topic === 'orders/fulfilled' ? lines.map((l) => [l, 'owned']) : lines.filter(isPre).map((l) => [l, 'preordered']);
-      if (!targets.length) return { ok: true };
-      const s = await loadCustomer(customerId);
-      if (s.profile.auto_garage === false) return { ok: true, skipped: 'auto_garage off' };
-      const products = await admin.getProducts([...new Set(targets.map(([l]) => String(l.product_id)))]);
+      if (!lines.length) return { ok: true };
+      const products = await admin.getProducts([...new Set(lines.map((l) => String(l.product_id)))]);
       const byId = new Map(products.map((p) => [String(p.id), p]));
-      for (const [line, status] of targets) {
-        const p = byId.get(String(line.product_id));
-        if (p) s.garage = applyOrderStatus(s.garage, snapshotFromProduct(p), status);
+      const s = await loadCustomer(customerId);
+      const changed = [];
+      const result = {};
+
+      // Drop-day limits: count limited units bought (or returned on cancellation)
+      if (topic !== 'orders/fulfilled') {
+        const r = applyLimitedPurchases(s.limited_purchases, payload, byId, { today: nzToday(now()), cancelled: topic === 'orders/cancelled' });
+        if (r.changed) {
+          s.limited_purchases = r.history;
+          changed.push('limited_purchases');
+        }
       }
-      await saveCustomer(customerId, s, ['garage']);
-      return { ok: true };
+
+      // My Garage: pre-orders on create, everything owned once fulfilled
+      if (topic !== 'orders/cancelled') {
+        const isPre = (l) => (l.properties || []).some((p) => p.name === '_preorder' && String(p.value) === 'true');
+        const targets = topic === 'orders/fulfilled' ? lines.map((l) => [l, 'owned']) : lines.filter(isPre).map((l) => [l, 'preordered']);
+        if (targets.length && s.profile.auto_garage === false) result.skipped = 'auto_garage off';
+        else if (targets.length) {
+          for (const [line, status] of targets) {
+            const p = byId.get(String(line.product_id));
+            if (p) s.garage = applyOrderStatus(s.garage, snapshotFromProduct(p), status);
+          }
+          changed.push('garage');
+        }
+      }
+
+      if (changed.length) await saveCustomer(customerId, s, changed);
+      return { ok: true, ...result };
     }
 
     // Privacy compliance webhooks

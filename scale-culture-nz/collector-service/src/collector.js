@@ -172,3 +172,52 @@ export class HttpError extends Error {
     this.status = status;
   }
 }
+
+/**
+ * Drop-day purchase limits: running count of units each customer has bought of
+ * products that currently have a per-customer limit. The purchase-limits checkout
+ * Function reads this to enforce limits across separate orders.
+ *
+ * history: { "<productId>": { qty, until }, _seen: { "<orderId>": "create" | "cancel" } }
+ * Webhooks can be retried, so each order is applied at most once per direction.
+ */
+export function applyLimitedPurchases(history, order, productsById, { today, cancelled = false } = {}) {
+  const next = { ...(history && typeof history === 'object' ? history : {}) };
+  const seen = { ...(next._seen || {}) };
+  const orderKey = String(order.id || '');
+  const direction = cancelled ? 'cancel' : 'create';
+  if (orderKey && (seen[orderKey] === direction || (direction === 'create' && seen[orderKey] === 'cancel'))) {
+    return { history: next, changed: false };
+  }
+
+  let changed = false;
+  for (const line of order.line_items || []) {
+    const pid = String(line.product_id || '');
+    const p = productsById.get(pid);
+    const max = Number(p?.metafields?.max_per_customer || 0);
+    const until = p?.metafields?.limit_until || '';
+    if (!(max > 0) || (until && today > until)) continue;
+    const prev = next[pid] || { qty: 0, until };
+    const qty = Math.max(0, prev.qty + (cancelled ? -1 : 1) * Number(line.quantity || 0));
+    next[pid] = { qty, until };
+    changed = true;
+  }
+
+  // Drop expired entries so the metafield stays small
+  for (const [k, v] of Object.entries(next)) {
+    if (k !== '_seen' && v && v.until && today > v.until) {
+      delete next[k];
+      changed = true;
+    }
+  }
+  if (changed && orderKey) {
+    seen[orderKey] = direction;
+    const keys = Object.keys(seen);
+    for (const k of keys.slice(0, Math.max(0, keys.length - 200))) delete seen[k];
+    next._seen = seen;
+  }
+  return { history: next, changed };
+}
+
+export const nzToday = (now = new Date()) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Pacific/Auckland', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);

@@ -62,6 +62,8 @@
                 {%- unless item.product.has_only_default_variant %} · {{ item.variant.title }}{% endunless -%}
               </span>
               {%- if is_pre -%}<span class="badge badge--accent" style="justify-self:start">{{ 'products.stock.preorder' | t }}</span>{%- endif -%}
+              {%- assign item_max = item.product.metafields.scale.max_per_customer.value | default: 0 -%}
+              {%- if item_max > 0 -%}<span class="card__limit">{{ 'limits.max_per_customer' | t: count: item_max }}</span>{%- endif -%}
               <div class="drawer-item__row">
                 <div class="qty qty--sm">
                   <button type="button" data-line-change="{{ item.quantity | minus: 1 }}" aria-label="{{ 'products.decrease' | t }}">−</button>
@@ -75,6 +77,50 @@
           </li>
         {%- endfor -%}
       </ul>
+      {%- liquid
+        assign up = settings.cart_upsell_collection
+        assign upsell = nil
+        if up != blank
+          assign has_from_up = false
+          for item in cart.items
+            assign ih = item.product.collections | map: 'handle'
+            if ih contains up.handle
+              assign has_from_up = true
+            endif
+          endfor
+          unless has_from_up
+            for p in up.products limit: 12
+              if p.available and p.has_only_default_variant
+                assign upsell = p
+                break
+              endif
+            endfor
+          endunless
+        endif
+      -%}
+      {%- if upsell -%}
+        <div class="upsell">
+          <p class="eyebrow">{{ 'bundle.upsell_heading' | t }}</p>
+          <div class="upsell__row">
+            <a href="{{ upsell.url }}" class="upsell__media">{%- if upsell.featured_media -%}{{ upsell.featured_media | image_url: width: 160 | image_tag: loading: 'lazy', alt: '' }}{%- endif -%}</a>
+            <div class="upsell__info">
+              <a href="{{ upsell.url }}" class="drawer-item__title">{{ upsell.metafields.scale.card_title.value | default: upsell.title }}</a>
+              <span class="cart-item__meta">
+                {%- assign pct = settings.bundle_discount_percent | default: 0 -%}
+                {%- if pct > 0 and up.handle == settings.bundle_discount_collection.handle -%}
+                  {%- assign off = upsell.price | times: pct | divided_by: 100 -%}
+                  {{ upsell.price | minus: off | money }} <s>{{ upsell.price | money }}</s> · {{ 'bundle.upsell_note' | t: pct: pct }}
+                {%- else -%}{{ upsell.price | money }}{%- endif -%}
+              </span>
+            </div>
+            <form action="{{ routes.cart_add_url }}" method="post" data-ajax-cart>
+              <input type="hidden" name="id" value="{{ upsell.selected_or_first_available_variant.id }}">
+              <input type="hidden" name="quantity" value="1">
+              <button type="submit" class="quick-add__button upsell__add">{{ 'products.quick_add' | t }}</button>
+            </form>
+          </div>
+        </div>
+      {%- endif -%}
     </div>
 
     <div class="drawer__footer">

@@ -98,3 +98,32 @@ test('handleize', () => {
   assert.equal(handleize('Mine’s R34 Fan!'), 'mine-s-r34-fan');
   assert.equal(handleize('1:64 Café'), '1-64-cafe');
 });
+
+import { applyLimitedPurchases, nzToday } from '../src/collector.js';
+
+test('applyLimitedPurchases counts limited lines once per order, reverses on cancel, prunes expired', () => {
+  const byId = new Map([
+    ['1', { metafields: { max_per_customer: 2, limit_until: '2026-10-20' } }],
+    ['2', { metafields: {} }],
+    ['3', { metafields: { max_per_customer: 1, limit_until: '2026-10-01' } }]
+  ]);
+  const order = { id: 501, line_items: [{ product_id: 1, quantity: 1 }, { product_id: 2, quantity: 5 }, { product_id: 3, quantity: 1 }] };
+  let r = applyLimitedPurchases({ 9: { qty: 1, until: '2026-09-01' } }, order, byId, { today: '2026-10-18' });
+  assert.equal(r.changed, true);
+  assert.deepEqual(r.history[1], { qty: 1, until: '2026-10-20' });
+  assert.equal(r.history[2], undefined); // unlimited
+  assert.equal(r.history[3], undefined); // limit window over
+  assert.equal(r.history[9], undefined); // expired entry pruned
+  // Retried webhook: no double count
+  const again = applyLimitedPurchases(r.history, order, byId, { today: '2026-10-18' });
+  assert.equal(again.changed, false);
+  assert.equal(again.history[1].qty, 1);
+  // Cancellation gives the allowance back
+  r = applyLimitedPurchases(r.history, order, byId, { today: '2026-10-18', cancelled: true });
+  assert.equal(r.history[1].qty, 0);
+  assert.equal(applyLimitedPurchases(r.history, order, byId, { today: '2026-10-18', cancelled: true }).changed, false);
+});
+
+test('nzToday uses Auckland time', () => {
+  assert.equal(nzToday(new Date('2026-10-19T12:30:00Z')), '2026-10-20');
+});

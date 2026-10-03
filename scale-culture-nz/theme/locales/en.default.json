@@ -264,5 +264,29 @@
     "empty": "No articles yet.",
     "shop_story": "Shop this story",
     "more": "More from the journal"
+  },
+  "limits": {
+    "badge": "Limited release",
+    "max_per_customer": {
+      "one": "Max 1 per customer",
+      "other": "Max {{ count }} per customer"
+    },
+    "remaining": {
+      "one": "You can buy 1 more",
+      "other": "You can buy {{ count }} more"
+    },
+    "login_required": "Log in to buy — we limit each collector so more people get one.",
+    "login_to_buy": "Log in to buy",
+    "reached": "You've reached the limit for this release",
+    "cart_exceeded": "{{ title }} is limited to {{ max }} per customer."
+  },
+  "bundle": {
+    "this_model": "This model",
+    "total": "Bundle total",
+    "you_save": "You save",
+    "add": "Add bundle to cart",
+    "note": "{{ pct }}% off display add-ons is applied at checkout when bought with a model.",
+    "upsell_heading": "Complete the display",
+    "upsell_note": "{{ pct }}% off with any model"
   }
 }

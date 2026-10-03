@@ -14,6 +14,32 @@
   if state == 'in_stock' or state == 'low_stock' or state == 'preorder'
     assign can_buy = true
   endif
+
+  # Drop-day purchase limit (display + client-side guard; checkout Function enforces)
+  capture lim
+    render 'limit-state', product: product
+  endcapture
+  assign lim_parts = lim | strip | split: '|'
+  assign lim_max = lim_parts[0] | plus: 0
+  assign lim_remaining = lim_parts[1] | plus: 0
+  assign lim_login = lim_parts[2]
+  assign qty_max = ''
+  if variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny'
+    assign qty_max = variant.inventory_quantity
+  endif
+  if lim_max > 0
+    if qty_max == ''
+      assign qty_max = lim_remaining
+    elsif lim_remaining < qty_max
+      assign qty_max = lim_remaining
+    endif
+  endif
+  assign show_sticky = can_buy
+  if lim_login == 'true'
+    assign show_sticky = false
+  elsif lim_max > 0 and lim_remaining == 0
+    assign show_sticky = false
+  endif
 -%}
 <div class="page-width">
   <div class="product" data-product="{{ product.handle }}">
@@ -46,6 +72,9 @@
         {%- if state == 'preorder' -%}
           {% render 'preorder-info', product: product, variant: variant %}
         {%- endif -%}
+        {%- if lim_max > 0 -%}
+          {% render 'limit-badge', max: lim_max, remaining: lim_remaining, login_required: lim_login, full: true %}
+        {%- endif -%}
 
         {%- form 'product', product, class: 'product__form', id: 'ProductForm', novalidate: 'novalidate' -%}
           {%- if product.has_only_default_variant -%}
@@ -69,18 +98,25 @@
             {%- endif -%}
           {%- endif -%}
 
-          {%- if can_buy -%}
+          {%- if lim_max > 0 -%}
+            <input type="hidden" data-limit-product="{{ product.id }}" data-limit-remaining="{{ lim_remaining }}" data-limit-max="{{ lim_max }}" data-limit-title="{{ product.title | escape }}">
+          {%- endif -%}
+          {%- if can_buy and lim_login == 'true' -%}
+            <a href="{{ routes.account_login_url }}?checkout_url={{ product.url | url_encode }}" class="button button--full button--accent">{{ 'limits.login_to_buy' | t }}</a>
+          {%- elsif can_buy and lim_max > 0 and lim_remaining == 0 -%}
+            <button type="button" class="button button--full" disabled>{{ 'limits.reached' | t }}</button>
+          {%- elsif can_buy -%}
             <div class="product__buy-row">
               <div class="qty">
                 <button type="button" data-qty="-1" aria-label="{{ 'products.decrease' | t }}">−</button>
-                <input type="number" name="quantity" value="1" min="1"{% if variant.inventory_management == 'shopify' and variant.inventory_policy == 'deny' %} max="{{ variant.inventory_quantity }}"{% endif %} aria-label="{{ 'products.quantity' | t }}">
+                <input type="number" name="quantity" value="1" min="1"{% if qty_max != '' %} max="{{ qty_max }}"{% endif %} aria-label="{{ 'products.quantity' | t }}">
                 <button type="button" data-qty="1" aria-label="{{ 'products.increase' | t }}">+</button>
               </div>
               <button type="submit" name="add" class="button {% if state == 'preorder' %}button--accent{% endif %}" data-add-button>
                 {%- if state == 'preorder' -%}{{ 'products.reserve' | t }}{%- else -%}{{ 'products.add_to_cart' | t }}{%- endif -%}
               </button>
             </div>
-            {%- if state != 'preorder' -%}{{ form | payment_button }}{%- endif -%}
+            {%- if state != 'preorder' and lim_max == 0 -%}{{ form | payment_button }}{%- endif -%}
           {%- else -%}
             {%- comment -%} Never show unavailable products as purchasable (SOP §15) {%- endcomment -%}
             <button type="button" class="button button--full" disabled>{% render 'stock-label', state: state %}</button>
@@ -125,7 +161,7 @@
   </div>
 </div>
 
-{%- if can_buy -%}
+{%- if show_sticky -%}
   <div class="sticky-atc" data-sticky-atc aria-hidden="true">
     <div class="sticky-atc__info">
       <div class="sticky-atc__title">{{ product.title }}</div>

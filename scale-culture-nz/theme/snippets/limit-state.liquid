@@ -1,0 +1,29 @@
+{%- comment -%}
+  Drop-day purchase limit for a product (display only — the purchase-limits
+  checkout Function enforces it). Outputs "max|remaining|login_required" or nothing.
+  Usage: {%- capture lim -%}{% render 'limit-state', product: product %}{%- endcapture -%}
+{%- endcomment -%}
+{%- liquid
+  assign m = product.metafields.scale
+  assign max = m.max_per_customer.value | default: 0
+  if max > 0
+    assign today = 'now' | date: '%Y-%m-%d'
+    assign until = m.limit_until.value | date: '%Y-%m-%d'
+    if m.limit_until == blank or today <= until
+      assign bought = 0
+      if customer
+        assign pid = product.id | append: ''
+        assign bought = customer.metafields.scale.limited_purchases.value[pid].qty | default: 0
+      endif
+      assign remaining = max | minus: bought
+      if remaining < 0
+        assign remaining = 0
+      endif
+      assign login_required = false
+      if m.limit_requires_login.value and customer == nil
+        assign login_required = true
+      endif
+      echo max | append: '|' | append: remaining | append: '|' | append: login_required
+    endif
+  endif
+-%}

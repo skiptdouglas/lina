@@ -1,0 +1,95 @@
+{%- comment -%}
+  "Complete the display" bundle (product page). The model plus display cases /
+  stands / paints from the product's `scale.bundle_products` list (or a fallback
+  collection). Add-ons in the bundle discount collection show the bundle saving;
+  the matching automatic Buy X Get Y discount in Shopify applies it at checkout.
+{%- endcomment -%}
+{%- liquid
+  assign addons = product.metafields.scale.bundle_products.value
+  if addons == blank or addons.size == 0
+    assign addons = settings.bundle_fallback_collection.products
+  endif
+  assign pct = settings.bundle_discount_percent | default: 0
+  assign disc_handle = settings.bundle_discount_collection.handle
+  assign main_variant = product.selected_or_first_available_variant
+  capture main_state
+    render 'stock-state', product: product, variant: main_variant
+  endcapture
+  assign main_state = main_state | strip
+  assign main_ok = false
+  if main_state == 'in_stock' or main_state == 'low_stock' or main_state == 'preorder'
+    assign main_ok = true
+  endif
+  capture lim
+    render 'limit-state', product: product
+  endcapture
+  assign lim_parts = lim | strip | split: '|'
+  if lim_parts[2] == 'true' or lim_parts[1] == '0'
+    assign main_ok = false
+  endif
+  assign shown = 0
+-%}
+{%- if main_ok and addons.size > 0 -%}
+  <section class="section bundle" data-bundle data-discount="{{ pct }}">
+    <div class="page-width">
+      <div class="section-header">
+        <div><p class="eyebrow">{{ section.settings.eyebrow }}</p><h2>{{ section.settings.heading }}</h2></div>
+      </div>
+      <div class="bundle__layout">
+        <ul class="bundle__items">
+          <li class="bundle-item bundle-item--main">
+            <input type="checkbox" checked disabled aria-label="{{ product.title | escape }}"
+              data-bundle-item data-variant-id="{{ main_variant.id }}" data-price="{{ main_variant.price }}" data-discounted="false"
+              {% if main_state == 'preorder' %}data-preorder="true" data-arrival="{{ product.metafields.scale.preorder_nz_arrival.value | escape }}"{% endif %}>
+            <div class="bundle-item__media">{%- if product.featured_media -%}{{ product.featured_media | image_url: width: 200 | image_tag: loading: 'lazy', alt: '' }}{%- endif -%}</div>
+            <div class="bundle-item__info">
+              <span class="card__brand">{{ 'bundle.this_model' | t }}</span>
+              <span class="bundle-item__title">{{ product.metafields.scale.card_title.value | default: product.title }}</span>
+              <span class="bundle-item__price">{{ main_variant.price | money }}</span>
+            </div>
+          </li>
+          {%- for p in addons limit: 6 -%}
+            {%- if p.id == product.id or p.available == false or shown >= 3 -%}{%- continue -%}{%- endif -%}
+            {%- assign v = p.selected_or_first_available_variant -%}
+            {%- assign coll_handles = p.collections | map: 'handle' -%}
+            {%- assign discounted = false -%}
+            {%- if pct > 0 and coll_handles contains disc_handle -%}{%- assign discounted = true -%}{%- endif -%}
+            {%- assign shown = shown | plus: 1 -%}
+            <li class="bundle-item">
+              <input type="checkbox" id="Bundle-{{ v.id }}" checked data-bundle-item data-variant-id="{{ v.id }}" data-price="{{ v.price }}" data-discounted="{{ discounted }}">
+              <label for="Bundle-{{ v.id }}" class="bundle-item__media">{%- if p.featured_media -%}{{ p.featured_media | image_url: width: 200 | image_tag: loading: 'lazy', alt: '' }}{%- endif -%}</label>
+              <label for="Bundle-{{ v.id }}" class="bundle-item__info">
+                <span class="card__brand">{{ p.vendor }}</span>
+                <span class="bundle-item__title">{{ p.metafields.scale.card_title.value | default: p.title }}</span>
+                <span class="bundle-item__price">
+                  {%- if discounted -%}
+                    {%- assign off = v.price | times: pct | divided_by: 100 -%}
+                    {{ v.price | minus: off | money }} <s>{{ v.price | money }}</s> <span class="badge badge--accent">−{{ pct }}%</span>
+                  {%- else -%}
+                    {{ v.price | money }}
+                  {%- endif -%}
+                </span>
+              </label>
+            </li>
+          {%- endfor -%}
+        </ul>
+        <div class="bundle__summary">
+          <div class="cart-summary__row"><span>{{ 'bundle.total' | t }}</span><strong data-bundle-total></strong></div>
+          <div class="cart-summary__row bundle__saving" data-bundle-saving-row hidden><span>{{ 'bundle.you_save' | t }}</span><span data-bundle-saving></span></div>
+          <button type="button" class="button button--accent button--full" data-bundle-add>{{ 'bundle.add' | t }}</button>
+          {%- if pct > 0 -%}<small>{{ 'bundle.note' | t: pct: pct }}</small>{%- endif -%}
+          <p class="drawer__error" role="alert" data-bundle-error hidden></p>
+        </div>
+      </div>
+    </div>
+  </section>
+{%- endif -%}
+{% schema %}
+{
+  "name": "Bundle",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Bundle and save" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Complete the display" }
+  ]
+}
+{% endschema %}

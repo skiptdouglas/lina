@@ -1,0 +1,12 @@
+{%- comment -%} "Limited release · max 2 per customer" — Params: max, remaining, login_required, full {%- endcomment -%}
+<div class="limit-note">
+  <span class="badge badge--accent">{{ 'limits.badge' | t }}</span>
+  <span>{{ 'limits.max_per_customer' | t: count: max }}</span>
+  {%- if full -%}
+    {%- if login_required == 'true' -%}
+      <span class="limit-note__sub">{{ 'limits.login_required' | t }}</span>
+    {%- elsif customer and remaining < max -%}
+      <span class="limit-note__sub">{{ 'limits.remaining' | t: count: remaining }}</span>
+    {%- endif -%}
+  {%- endif -%}
+</div>

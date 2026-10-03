@@ -24,12 +24,14 @@ scale-culture-nz/
 │   ├── setup-store.mjs         creates metafields, the Drop metaobject and ~90 smart collections
 │   └── validate-catalogue.mjs  checks a product CSV against the SOP before import
 ├── preview/                  renders the real theme with sample data → static pages + screenshots
+├── shopify-app/              Shopify CLI app: proxy/webhook config + purchase-limits checkout Function
 ├── collector-service/          Phase 2 backend (Shopify app proxy): My Garage, profiles, synced wishlist
 ├── data/product-import-template.csv
 └── docs/
     ├── setup.md                launch checklist (Shopify, apps, payments, shipping, SEO)
     ├── operations.md           adding stock, inventory workflow, drops, pre-orders, reporting
     ├── screenshots/            generated previews (desktop + mobile)
+    ├── bundles-and-limits.md   bundle discounts, drop-day purchase limits, drop-day checklist
     ├── phase-2.md              collector features: My Garage, profiles, alerts, recommendations, reviews
     └── sop-coverage.md         every SOP section → where it's implemented
 ```
@@ -132,3 +134,15 @@ run `cd preview && npm install && npm run build`, then open `preview/dist/index.
   - sold-out models with wishlist demand
 
   Set `DASHBOARD_PASSWORD` to enable it. See `collector-service/README.md`.
+
+## Bundles and drop-day limits
+
+- **Bundles.** "Complete the display" on product pages (the model plus display cases,
+  stands or dioramas, with a live bundle saving) and a display-case suggestion in the
+  slide-out cart. The saving comes from a matching Shopify Buy X Get Y discount.
+- **Drop-day purchase limits.** "Max N per customer" on limited releases, optionally
+  login-only, until a set date. A checkout Function enforces the limit, so it can't be
+  bypassed, and the collector service counts it across separate orders.
+
+See [`docs/bundles-and-limits.md`](docs/bundles-and-limits.md). Try both in the preview on
+the INNO64 R34 product page.

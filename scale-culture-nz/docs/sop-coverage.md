@@ -52,6 +52,8 @@ Status key:
 | 37 | Advanced drop alerts (per-drop reminders) | ✅ / ⚙️ | `snippets/drop-reminder.liquid` → Klaviyo event |
 | 37 | Collection recommendations | ✅ | `sections/recommended-for-you.liquid` |
 | 37 | Customer reviews | ✅ / ⚙️ | `product-reviews` section (app block), `snippets/rating.liquid`, stars on cards |
+| — | Bundles (product page + cart suggestion) | ✅ / ⚙️ | `sections/product-bundle.liquid`, cart drawer suggestion; Buy X Get Y discount in admin |
+| — | Drop-day purchase limits | ✅ / ⚙️ | `shopify-app/extensions/purchase-limits` (checkout Function), collector-service limit tracking, theme limit note |
 | 38 | Phase 3 | 🔜 | |
 | 39 | Performance | ✅ | Responsive images, lazy loading, no framework, no autoplay |
 | 40–42 | Catalogue mix and positioning | — | Business guidance; the editorial and brand sections are built to show off a curated range |

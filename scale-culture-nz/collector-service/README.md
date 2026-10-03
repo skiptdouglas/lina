@@ -41,7 +41,7 @@ Shopify forwards `/apps/collector/<path>` on the storefront to `/proxy/<path>` h
 | POST | `/proxy/garage` | `{product_id, status: "owned"\|"wanted"\|"preordered"\|null, note?}` | Set or clear a garage entry |
 | POST | `/proxy/profile` | `{display_name, bio, location, public, show_wanted, auto_garage, interests:{makes,scales,brands,categories}}` | Save the profile and publish or unpublish the public page |
 | POST | `/proxy/wishlist` | `{handle, product_id, saved}` or `{merge:[handles]}` | Sync the wishlist and adjust the demand count |
-| POST | `/webhooks` | Shopify webhook | `orders/create` marks pre-ordered items, `orders/fulfilled` marks items owned, `customers/redact` removes the public profile |
+| POST | `/webhooks` | Shopify webhook | `orders/create` marks pre-ordered items and counts limited-release units, `orders/fulfilled` marks items owned, `orders/cancelled` gives limited units back, `customers/redact` removes the public profile |
 | GET | `/auth`, `/auth/callback` | | One-time OAuth install that stores the Admin token |
 | GET | `/dashboard`, `/dashboard.json` | | Owner dashboard (HTTP Basic auth, user `owner`, password `DASHBOARD_PASSWORD`; returns 404 when unset) |
 | GET | `/health` | | Liveness check |

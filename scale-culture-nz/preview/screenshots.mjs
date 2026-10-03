@@ -33,8 +33,8 @@ const openDrawer = async (p) => {
   await p.waitForTimeout(300);
 };
 
-await shot(desktop, 'index.html', 'home-desktop.jpg', { full: true });
-await shot(mobile, 'index.html', 'home-mobile.jpg', { full: true });
+await shot(desktop, 'home.html', 'home-desktop.jpg', { full: true });
+await shot(mobile, 'home.html', 'home-mobile.jpg', { full: true });
 await shot(desktop, 'product.html', 'product-desktop.jpg');
 await shot(desktop, 'product-preorder.html', 'product-preorder-desktop.jpg', { full: false });
 await shot(mobile, 'product.html', 'product-mobile-sticky-atc.jpg', { before: (p) => p.evaluate(() => { window.scrollTo(0, 1500); }).then(() => p.waitForTimeout(400)) });

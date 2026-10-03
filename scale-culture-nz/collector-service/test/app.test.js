@@ -22,6 +22,7 @@ function fakeAdmin() {
   const db = { customers: { 42: { email: 'c@test.nz', data: {} } }, counts: {}, collectors: {} };
   const products = {
     1: { id: '1', handle: 'inno64-r34', title: 'INNO64 – R34', vendor: 'INNO64', image: '', metafields: { vehicle_make: 'Nissan', vehicle_model: 'Skyline', vehicle_generation: 'R34', scale: '1:64' } },
+    3: { id: '3', handle: 'kaido-510', title: 'Kaido – 510', vendor: 'Kaido House', image: '', metafields: { vehicle_make: 'Datsun', max_per_customer: 2, limit_until: '2999-12-31' } },
     2: { id: '2', handle: 'pop-a80', title: 'POP – A80', vendor: 'POP RACE', image: '', metafields: { vehicle_make: 'Toyota', vehicle_model: 'Supra', vehicle_generation: 'A80', scale: '1:64' } }
   };
   return {
@@ -187,4 +188,18 @@ test('dashboard: basic auth gate', async () => {
   };
   assert.equal(await req(null), 401);
   assert.equal(await req('owner:wrong'), 401);
+});
+
+test('order webhooks track limited-release purchases, cancellations give them back', async () => {
+  const send = (topic, payload) => {
+    const raw = JSON.stringify(payload);
+    return call('POST', '/webhooks', raw, { 'x-shopify-topic': topic, 'x-shopify-hmac-sha256': createHmac('sha256', SECRET).update(raw).digest('base64') });
+  };
+  const order = { id: 7001, customer: { id: 42 }, line_items: [{ product_id: 3, quantity: 2 }, { product_id: 1, quantity: 1 }] };
+  await send('orders/create', order);
+  await send('orders/create', order); // retried delivery
+  assert.equal(admin.db.customers[42].data.limited_purchases[3].qty, 2);
+  assert.equal(admin.db.customers[42].data.limited_purchases[1], undefined);
+  await send('orders/cancelled', order);
+  assert.equal(admin.db.customers[42].data.limited_purchases[3].qty, 0);
 });

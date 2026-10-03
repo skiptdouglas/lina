@@ -172,5 +172,41 @@
         "info": "Enables restock alerts and drop reminders."
       }
     ]
+  },
+  {
+    "name": "Bundles",
+    "settings": [
+      {
+        "type": "paragraph",
+        "content": "Bundle savings are applied at checkout by an automatic Buy X Get Y discount. Keep the percentage and collection below in step with that discount (see docs/bundles-and-limits.md)."
+      },
+      {
+        "type": "range",
+        "id": "bundle_discount_percent",
+        "label": "Bundle discount on add-ons (%)",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "default": 15
+      },
+      {
+        "type": "collection",
+        "id": "bundle_discount_collection",
+        "label": "Discounted add-on collection",
+        "info": "e.g. Display cases"
+      },
+      {
+        "type": "collection",
+        "id": "bundle_fallback_collection",
+        "label": "Default add-ons",
+        "info": "Used when a product has no 'Bundle with' products set."
+      },
+      {
+        "type": "collection",
+        "id": "cart_upsell_collection",
+        "label": "Cart suggestion collection",
+        "info": "Suggest one item from this collection in the slide-out cart."
+      }
+    ]
   }
 ]

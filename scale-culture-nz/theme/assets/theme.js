@@ -485,6 +485,12 @@
       if (!(form.matches('[data-ajax-cart]') || form.id === 'ProductForm')) return;
       if (e.submitter && e.submitter.name === 'checkout') return;
       e.preventDefault();
+      const limitError = await checkLimit(form);
+      if (limitError) {
+        openDrawer();
+        showCartError(limitError);
+        return;
+      }
       const buttons = $$(`button[type="submit"], button[form="${form.id}"]`, document).filter(
         (b) => b.form === form
       );
@@ -506,4 +512,82 @@
       }
     });
   }
+
+  /* Drop-day limits: friendly check before adding. The checkout Function is the real guard. */
+  async function checkLimit(form) {
+    const lim = form.querySelector('[data-limit-product]');
+    if (!lim) return null;
+    const qtyInput = form.querySelector('[name="quantity"]');
+    const requested = Number(qtyInput ? qtyInput.value : 1) || 1;
+    let inCart = 0;
+    try {
+      const cart = await fetch('/cart.js', { headers: { Accept: 'application/json' } }).then((r) => r.json());
+      inCart = cart.items.filter((i) => String(i.product_id) === lim.dataset.limitProduct).reduce((n, i) => n + i.quantity, 0);
+    } catch (e) {
+      return null;
+    }
+    const remaining = Number(lim.dataset.limitRemaining);
+    if (inCart + requested <= remaining) return null;
+    return `${lim.dataset.limitTitle} is limited to ${lim.dataset.limitMax} per customer${inCart ? ` — you already have ${inCart} in your cart` : ''}.`;
+  }
+
+  /* Bundles: "Complete the display" */
+  $$('[data-bundle]').forEach((bundle) => {
+    const pct = Number(bundle.dataset.discount) || 0;
+    const items = $$('[data-bundle-item]', bundle);
+    const fmt = (cents) => `$${(cents / 100).toFixed(2)}`;
+    const update = () => {
+      let total = 0;
+      let saving = 0;
+      items.filter((i) => i.checked).forEach((i) => {
+        const price = Number(i.dataset.price);
+        const off = i.dataset.discounted === 'true' ? Math.floor((price * pct) / 100) : 0;
+        total += price - off;
+        saving += off;
+      });
+      $('[data-bundle-total]', bundle).textContent = fmt(total);
+      $('[data-bundle-saving]', bundle).textContent = fmt(saving);
+      $('[data-bundle-saving-row]', bundle).hidden = saving === 0;
+      const count = items.filter((i) => i.checked).length;
+      $('[data-bundle-add]', bundle).disabled = count < 2;
+    };
+    items.forEach((i) => i.addEventListener('change', update));
+    update();
+
+    $('[data-bundle-add]', bundle).addEventListener('click', async (e) => {
+      const btn = e.currentTarget;
+      const err = $('[data-bundle-error]', bundle);
+      err.hidden = true;
+      btn.setAttribute('aria-busy', 'true');
+      const handle = window.location.pathname.split('/').pop();
+      const payload = items.filter((i) => i.checked).map((i) => {
+        const properties = { _bundle: handle };
+        if (i.dataset.preorder) {
+          properties._preorder = 'true';
+          if (i.dataset.arrival) properties['Expected NZ arrival'] = i.dataset.arrival;
+        }
+        return { id: Number(i.dataset.variantId), quantity: 1, properties };
+      });
+      try {
+        const res = await fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ items: payload, sections: 'cart-drawer' })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.description || data.message || 'Could not add the bundle');
+        if (ctx.cartDrawer && drawer) {
+          renderDrawer(data.sections && data.sections['cart-drawer']);
+          openDrawer();
+        } else {
+          window.location.href = '/cart';
+        }
+      } catch (ex) {
+        err.textContent = ex.message;
+        err.hidden = false;
+      } finally {
+        btn.removeAttribute('aria-busy');
+      }
+    });
+  });
 })();

@@ -8,7 +8,7 @@ const config = loadConfig();
 const tokens = await createTokenStore(config);
 const admin = createAdminClient({ shop: config.shop, token: tokens.get, apiVersion: config.apiVersion });
 const callback = `${config.serviceUrl}/webhooks`;
-for (const topic of ['ORDERS_CREATE', 'ORDERS_FULFILLED']) {
+for (const topic of ['ORDERS_CREATE', 'ORDERS_FULFILLED', 'ORDERS_CANCELLED']) {
   const errors = await admin.registerWebhook(topic, callback);
   console.log(errors.length ? `· ${topic}: ${errors.map((e) => e.message).join('; ')}` : `✓ ${topic} → ${callback}`);
 }
