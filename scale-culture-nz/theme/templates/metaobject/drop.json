@@ -1,7 +1,0 @@
-{
-  "sections": {
-    "main": { "type": "main-drop", "settings": {} },
-    "alerts": { "type": "drop-alerts", "settings": {} }
-  },
-  "order": ["main", "alerts"]
-}

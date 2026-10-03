@@ -1,9 +1,0 @@
-{%- case state -%}
-  {%- when 'in_stock' -%}{{ 'products.stock.in_stock' | t }}
-  {%- when 'low_stock' -%}{{ 'products.stock.low_stock' | t }}
-  {%- when 'preorder' -%}{{ 'products.stock.preorder' | t }}
-  {%- when 'coming_soon' -%}{{ 'products.stock.coming_soon' | t }}
-  {%- when 'incoming' -%}{{ 'products.stock.incoming' | t }}
-  {%- when 'discontinued' -%}{{ 'products.stock.discontinued' | t }}
-  {%- else -%}{{ 'products.stock.sold_out' | t }}
-{%- endcase -%}

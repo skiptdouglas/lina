@@ -1,7 +1,0 @@
-{%- comment -%} Countdown to a datetime. Hidden automatically by theme.js once reached. {%- endcomment -%}
-<div class="countdown" data-countdown="{{ target | date: '%Y-%m-%dT%H:%M:%S%z' }}" aria-live="off">
-  <div><b data-unit="d">--</b><small>{{ 'drops.days' | t }}</small></div>
-  <div><b data-unit="h">--</b><small>{{ 'drops.hours' | t }}</small></div>
-  <div><b data-unit="m">--</b><small>{{ 'drops.minutes' | t }}</small></div>
-  <div><b data-unit="s">--</b><small>{{ 'drops.seconds' | t }}</small></div>
-</div>
