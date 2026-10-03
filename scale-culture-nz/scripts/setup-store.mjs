@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // One-off store bootstrap for Scale Culture NZ via the Shopify Admin GraphQL API.
-// Creates: the `drop` metaobject, product + collection metafield definitions
+// Creates: the `drop` and `collector` metaobjects, customer metafields (Phase 2), product + collection metafield definitions
 // (storefront-readable, filterable, pinned), and the smart collections the theme
 // links to (scales, categories, brands, makes, editorial, pre-orders, new, sale).
 //
@@ -12,7 +12,7 @@
 // Token scopes: write_products, write_metaobject_definitions, write_metaobjects, write_publications
 
 import {
-  NAMESPACE, PRODUCT_METAFIELDS, COLLECTION_METAFIELDS, DROP_METAOBJECT, BRANDS, EDITORIAL_COLLECTIONS,
+  NAMESPACE, PRODUCT_METAFIELDS, COLLECTION_METAFIELDS, CUSTOMER_METAFIELDS, DROP_METAOBJECT, COLLECTOR_METAOBJECT, BRANDS, EDITORIAL_COLLECTIONS,
   KIT_CATEGORIES, ACCESSORY_CATEGORIES, VEHICLE_MAKES, handleize
 } from './catalogue-schema.mjs';
 
@@ -54,13 +54,13 @@ function validationsFor(def, metaobjectIds = {}) {
   return v;
 }
 
-async function createDropMetaobject() {
-  console.log('\nMetaobject: drop');
-  if (DRY_RUN) return { drop: 'gid://dry-run/MetaobjectDefinition/drop' };
-  const existing = await gql(`query($t: String!) { metaobjectDefinitionByType(type: $t) { id } }`, { t: DROP_METAOBJECT.type });
+async function createMetaobject(def) {
+  console.log(`\nMetaobject: ${def.type}`);
+  if (DRY_RUN) return `gid://dry-run/MetaobjectDefinition/${def.type}`;
+  const existing = await gql(`query($t: String!) { metaobjectDefinitionByType(type: $t) { id } }`, { t: def.type });
   if (existing.metaobjectDefinitionByType) {
-    console.log('  · drop (exists)');
-    return { drop: existing.metaobjectDefinitionByType.id };
+    console.log(`  · ${def.type} (exists)`);
+    return existing.metaobjectDefinitionByType.id;
   }
   const data = await gql(
     `mutation($d: MetaobjectDefinitionCreateInput!) {
@@ -68,21 +68,21 @@ async function createDropMetaobject() {
     }`,
     {
       d: {
-        type: DROP_METAOBJECT.type,
-        name: DROP_METAOBJECT.name,
-        displayNameKey: DROP_METAOBJECT.displayNameKey,
+        type: def.type,
+        name: def.name,
+        displayNameKey: def.displayNameKey,
         access: { storefront: 'PUBLIC_READ' },
         capabilities: {
           publishable: { enabled: true },
-          onlineStore: { enabled: true, data: { urlHandle: DROP_METAOBJECT.urlHandle } }
+          onlineStore: { enabled: true, data: { urlHandle: def.urlHandle } }
         },
-        fieldDefinitions: DROP_METAOBJECT.fields.map((f) => ({ key: f.key, name: f.name, type: f.type, required: !!f.required }))
+        fieldDefinitions: def.fields.map((f) => ({ key: f.key, name: f.name, type: f.type, required: !!f.required }))
       }
     }
   );
   const r = data.metaobjectDefinitionCreate;
-  report('drop', r.userErrors);
-  return { drop: r.metaobjectDefinition?.id };
+  report(def.type, r.userErrors);
+  return r.metaobjectDefinition?.id;
 }
 
 async function createMetafields(ownerType, defs, metaobjectIds) {
@@ -97,7 +97,7 @@ async function createMetafields(ownerType, defs, metaobjectIds) {
       type: def.type,
       ownerType,
       pin: true,
-      access: { storefront: 'PUBLIC_READ' },
+      access: ownerType === 'CUSTOMER' ? undefined : { storefront: 'PUBLIC_READ' },
       validations: validationsFor(def, metaobjectIds),
       capabilities: def.filter ? { smartCollectionCondition: { enabled: true }, adminFilterable: { enabled: true } } : undefined
     };
@@ -200,8 +200,12 @@ async function createCollections(mf) {
   }
 }
 
-const metaobjectIds = await createDropMetaobject();
+const metaobjectIds = {
+  drop: await createMetaobject(DROP_METAOBJECT),
+  collector: await createMetaobject(COLLECTOR_METAOBJECT)
+};
 const productMf = await createMetafields('PRODUCT', PRODUCT_METAFIELDS, metaobjectIds);
 await createMetafields('COLLECTION', COLLECTION_METAFIELDS, metaobjectIds);
+await createMetafields('CUSTOMER', CUSTOMER_METAFIELDS, metaobjectIds);
 await createCollections(productMf);
 console.log('\nDone. Next: enable filters in Search & Discovery (see docs/setup.md).');

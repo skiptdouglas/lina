@@ -2,7 +2,7 @@
 
 *Japanese automotive culture. In miniature.*
 
-The Phase 1 build for the Scale Culture NZ website SOP. It is a premium, mobile-first
+The Phase 1 and Phase 2 build for the Scale Culture NZ website SOP. It is a premium, mobile-first
 Shopify Online Store 2.0 theme, plus the catalogue data model and the tooling the owner
 uses to run the store.
 
@@ -23,10 +23,12 @@ scale-culture-nz/
 │   ├── catalogue-schema.mjs    the product data standard: scales, makes, models, metafields
 │   ├── setup-store.mjs         creates metafields, the Drop metaobject and ~90 smart collections
 │   └── validate-catalogue.mjs  checks a product CSV against the SOP before import
+├── collector-service/          Phase 2 backend (Shopify app proxy): My Garage, profiles, synced wishlist
 ├── data/product-import-template.csv
 └── docs/
     ├── setup.md                launch checklist (Shopify, apps, payments, shipping, SEO)
     ├── operations.md           adding stock, inventory workflow, drops, pre-orders, reporting
+    ├── phase-2.md              collector features: My Garage, profiles, alerts, recommendations, reviews
     └── sop-coverage.md         every SOP section → where it's implemented
 ```
 
@@ -84,3 +86,20 @@ the Search & Discovery filters, menus, pages and apps.
   metafields. They drive the storefront filters, the smart collections and the JSON-LD.
   The validator also writes them into the product tags, so a search for "R34" finds every
   brand's version.
+
+## Phase 2
+
+Phase 2 adds the collector features:
+
+- My Garage, with Owned / Wanted / Pre-ordered statuses, a "Models owned: 84" breakdown by
+  manufacturer, and model collections such as "R34 Collection". Purchases are added
+  automatically.
+- Public collector profiles.
+- A wishlist synced to the customer's account, with "N collectors want this" demand counts.
+- Interest-based Klaviyo targeting, restock alerts and per-drop reminders.
+- "Complete your collection" recommendations.
+- Review stars.
+
+To set it up, read [`docs/phase-2.md`](docs/phase-2.md) and
+[`collector-service/README.md`](collector-service/README.md). These features stay switched
+off in theme settings until the collector service is deployed.

@@ -28,9 +28,9 @@ Status key:
 | 17 | Collecting a deposit at checkout | ⚙️ | Selling-plan app |
 | 18 | Accounts: orders, shipping details, pre-orders, wishlist | ✅ | `templates/customers/*`, `sections/main-account.liquid` |
 | 18 | Saved payment information | ⚙️ | Shop Pay |
-| 19 | My Garage | 🔜 | Phase 2. Planned as a customer metafield `scale.garage` (list of product refs + status) |
+| 19 | My Garage: owned / wanted / pre-ordered, totals by make, model collections | ✅ | `main-garage`, `garage-buttons`, collector service; auto-filled from orders |
 | 20 | Wishlist on every product | ✅ | `snippets/wishlist-button.liquid`, `page.wishlist` (stored in the browser) |
-| 20 | Wishlist demand reporting | ⚙️ | Wishlist app |
+| 20 | Wishlist demand reporting ("32 customers…") | ✅ | Synced wishlist + `scale.wishlist_count`, `snippets/wishlist-demand.liquid` |
 | 21 | Drop Alerts with interests | ✅ | `sections/drop-alerts.liquid` → customer tags → Klaviyo |
 | 22 | Search by name, make, model, brand, SKU, scale | ✅ / ⚙️ | `sections/main-search.liquid`, `--fix-tags`, Search & Discovery |
 | 23 | Filters, working on mobile | ✅ / ⚙️ | `snippets/facets.liquid` (drawer on mobile); filter list set in Search & Discovery |
@@ -45,6 +45,13 @@ Status key:
 | 33 | Journal | ⚙️ | Shopify Blog `journal`; link products inside articles |
 | 34–35 | Analytics and admin dashboard | ⚙️ | `operations.md`: reports and ShopifyQL |
 | 36 | Phase 1 MVP | ✅ | Everything above |
-| 37–38 | Phase 2 and 3 | 🔜 | |
+| 37 | Collector profiles | ✅ | `collector-profile-form`, public `collector` metaobject pages |
+| 37 | Advanced wishlist (synced across devices) | ✅ | Collector service `/wishlist` |
+| 37 | Interest-based notifications | ✅ / ⚙️ | Interests → Klaviyo profile properties; segments in `phase-2.md` |
+| 37 | Restock alerts | ✅ / ⚙️ | `snippets/restock-form.liquid` → Klaviyo Back in Stock |
+| 37 | Advanced drop alerts (per-drop reminders) | ✅ / ⚙️ | `snippets/drop-reminder.liquid` → Klaviyo event |
+| 37 | Collection recommendations | ✅ | `sections/recommended-for-you.liquid` |
+| 37 | Customer reviews | ✅ / ⚙️ | `product-reviews` section (app block), `snippets/rating.liquid`, stars on cards |
+| 38 | Phase 3 | 🔜 | |
 | 39 | Performance | ✅ | Responsive images, lazy loading, no framework, no autoplay |
 | 40–42 | Catalogue mix and positioning | — | Business guidance; the editorial and brand sections are built to show off a curated range |

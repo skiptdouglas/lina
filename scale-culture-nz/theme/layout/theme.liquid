@@ -43,6 +43,14 @@
 
     <script>
       window.ScaleCulture = {
+        collector: {
+          enabled: {{ settings.collector_enabled | json }},
+          proxy: {{ settings.collector_proxy | default: '/apps/collector' | json }},
+          loggedIn: {% if customer %}true{% else %}false{% endif %},
+          {%- assign server_wishlist = customer.metafields.scale.wishlist.value %}
+          wishlist: {% if customer and settings.collector_enabled %}{% if server_wishlist %}{{ server_wishlist | json }}{% else %}[]{% endif %}{% else %}null{% endif %}
+        },
+        klaviyo: {{ settings.klaviyo_public_key | json }},
         routes: {
           cart_add_url: {{ routes.cart_add_url | json }},
           cart_url: {{ routes.cart_url | json }},

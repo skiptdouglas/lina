@@ -1,0 +1,67 @@
+{%- comment -%}
+  My Garage (SOP §19): models owned / wanted / pre-ordered, breakdown by
+  manufacturer, and model collections ("R34 Collection").
+{%- endcomment -%}
+<section class="section">
+  <div class="page-width">
+    <p class="eyebrow">{{ 'garage.eyebrow' | t }}</p>
+    <h1>{{ 'garage.title' | t }}</h1>
+    {%- unless customer -%}
+      <p>{{ 'garage.intro' | t }}</p>
+      <a href="{{ routes.account_login_url }}" class="button button--accent">{{ 'account.login' | t }}</a>
+    {%- else -%}
+      {%- liquid
+        assign garage = customer.metafields.scale.garage.value
+        assign stats = customer.metafields.scale.garage_stats.value
+        assign profile = customer.metafields.scale.profile.value
+      -%}
+      {%- if garage == blank or garage.size == 0 -%}
+        <div class="empty-state">
+          <h2>{{ 'garage.empty' | t }}</h2>
+          <p>{{ 'garage.empty_hint' | t }}</p>
+          <a href="/collections/new-arrivals" class="button button--accent">{{ 'cart.continue' | t }}</a>
+        </div>
+      {%- else -%}
+        <div class="garage-head">
+          {% render 'garage-stats', stats: stats %}
+          <div class="garage-head__actions">
+            {%- if profile.public and profile.slug != blank -%}
+              <a class="button button--outline" href="/pages/collector/{{ profile.slug }}">{{ 'collector.view_public' | t }}</a>
+            {%- endif -%}
+            <a class="button" href="/pages/collector-profile">{{ 'collector.edit' | t }}</a>
+          </div>
+        </div>
+
+        <div class="garage-filters" role="tablist" data-garage-tabs>
+          <button type="button" role="tab" aria-selected="true" data-filter="all">{{ 'garage.all' | t }} ({{ garage.size }})</button>
+          <button type="button" role="tab" aria-selected="false" data-filter="owned">{{ 'garage.owned' | t }} ({{ stats.owned }})</button>
+          <button type="button" role="tab" aria-selected="false" data-filter="wanted">{{ 'garage.wanted' | t }} ({{ stats.wanted }})</button>
+          <button type="button" role="tab" aria-selected="false" data-filter="preordered">{{ 'garage.preordered' | t }} ({{ stats.preordered }})</button>
+        </div>
+
+        {%- if stats.collections.size > 0 -%}
+          <div class="garage-collections">
+            {%- for c in stats.collections limit: 6 -%}
+              {%- assign items = garage | where: 'group', c.group -%}
+              <details class="garage-collection">
+                <summary><b>{{ c.group }}</b> {{ 'garage.collection' | t }} <span>{{ c.count }}</span></summary>
+                <ul>
+                  {%- for e in items -%}
+                    <li><span class="garage-dot garage-dot--{{ e.status }}"></span>
+                      {%- case e.status -%}{%- when 'owned' -%}{{ 'garage.owned' | t }}{%- when 'wanted' -%}{{ 'garage.wanted' | t }}{%- else -%}{{ 'garage.preordered' | t }}{%- endcase %} – <a href="/products/{{ e.handle }}">{{ e.colour | default: e.card_title }}</a> <small>{{ e.vendor }} {{ e.scale }}</small></li>
+                  {%- endfor -%}
+                </ul>
+              </details>
+            {%- endfor -%}
+          </div>
+        {%- endif -%}
+
+        {% render 'garage-grid', entries: garage, editable: true %}
+      {%- endif -%}
+    {%- endunless -%}
+  </div>
+</section>
+
+{% schema %}
+{ "name": "My Garage", "settings": [] }
+{% endschema %}

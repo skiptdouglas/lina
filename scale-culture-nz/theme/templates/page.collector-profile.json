@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "main": {
+      "type": "collector-profile-form",
+      "settings": {}
+    }
+  },
+  "order": [
+    "main"
+  ]
+}

@@ -60,5 +60,6 @@
       <span class="card__price">{% render 'price', product: product %}</span>
     </div>
     <div class="card__stock">{% render 'stock-status', product: product, state: state %}</div>
+    {% render 'rating', product: product %}
   </div>
 </article>

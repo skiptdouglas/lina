@@ -1,0 +1,43 @@
+{%- comment -%}
+  Garage entries rendered from snapshots (no product lookups needed).
+  Params: entries, editable (bool)
+{%- endcomment -%}
+<ul class="product-grid product-grid--4 garage-grid">
+  {%- for e in entries -%}
+    <li class="garage-item" data-garage-item data-status="{{ e.status }}" data-make="{{ e.make | escape }}" data-group="{{ e.group | escape }}">
+      <article class="card">
+        <a class="card__media" href="/products/{{ e.handle }}">
+          {%- if e.image != blank -%}
+            {%- if e.image contains '?' -%}{%- assign sep = '&' -%}{%- else -%}{%- assign sep = '?' -%}{%- endif -%}
+            <img src="{{ e.image }}{{ sep }}width=600" alt="{{ e.card_title | escape }}" loading="lazy" width="600" height="600">
+          {%- endif -%}
+          <div class="card__badges">
+            <span class="badge{% if e.status == 'owned' %}{% elsif e.status == 'preordered' %} badge--accent{% else %} badge--light{% endif %}">
+              {%- case e.status -%}
+                {%- when 'owned' -%}{{ 'garage.owned' | t }}
+                {%- when 'wanted' -%}{{ 'garage.wanted' | t }}
+                {%- when 'preordered' -%}{{ 'garage.preordered' | t }}
+              {%- endcase -%}
+            </span>
+          </div>
+        </a>
+        <div class="card__info">
+          <span class="card__brand">{{ e.vendor }}</span>
+          <h3 class="card__title"><a href="/products/{{ e.handle }}">{{ e.card_title }}</a></h3>
+          <div class="card__meta"><span class="card__scale">{{ e.scale }}</span><span class="card__price" style="font-weight:500">{{ e.colour }}</span></div>
+          {%- if editable -%}
+            <div class="garage-item__actions" data-garage-control data-product-id="{{ e.pid }}">
+              <label class="visually-hidden" for="GarageStatus-{{ e.pid }}">{{ 'garage.status' | t }}</label>
+              <select id="GarageStatus-{{ e.pid }}" class="input" data-garage-select>
+                <option value="owned"{% if e.status == 'owned' %} selected{% endif %}>{{ 'garage.owned' | t }}</option>
+                <option value="wanted"{% if e.status == 'wanted' %} selected{% endif %}>{{ 'garage.wanted' | t }}</option>
+                <option value="preordered"{% if e.status == 'preordered' %} selected{% endif %}>{{ 'garage.preordered' | t }}</option>
+                <option value="">{{ 'garage.remove' | t }}</option>
+              </select>
+            </div>
+          {%- endif -%}
+        </div>
+      </article>
+    </li>
+  {%- endfor -%}
+</ul>

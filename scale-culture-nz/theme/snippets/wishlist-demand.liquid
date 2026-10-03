@@ -1,0 +1,6 @@
+{%- comment -%} "32 collectors have this on their wishlist" (SOP §20) {%- endcomment -%}
+{%- assign wl = product.metafields.scale.wishlist_count.value | default: 0 -%}
+{%- assign threshold = settings.wishlist_demand_threshold | default: 5 -%}
+{%- if wl >= threshold -%}
+  <p class="demand">{% render 'icon', name: 'heart' %}{{ 'wishlist.demand' | t: count: wl }}</p>
+{%- endif -%}

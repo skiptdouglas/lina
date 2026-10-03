@@ -38,6 +38,7 @@
       <div class="product__info-inner">
         <a href="{{ product.vendor | url_for_vendor }}" class="product__brand">{{ product.vendor }}</a>
         <h1 class="product__title">{{ product.title }}</h1>
+        {% render 'rating', product: product, full: true %}
         {%- if m.scale != blank -%}<span class="product__scale">{{ m.scale.value }}</span>{%- endif -%}
         <div class="product__price" data-price>{% render 'price', product: product, variant: variant %}</div>
         <div data-stock>{% render 'stock-status', product: product, variant: variant, state: state %}</div>
@@ -89,7 +90,15 @@
           {%- endif -%}
         {%- endform -%}
 
-        {% render 'wishlist-button', product: product, style: 'full' %}
+        {%- unless can_buy -%}
+          {%- if state != 'discontinued' -%}{% render 'restock-form', product: product, variant: variant, state: state %}{%- endif -%}
+        {%- endunless -%}
+
+        <div class="product__collector">
+          {% render 'wishlist-button', product: product, style: 'full' %}
+          {% render 'wishlist-demand', product: product %}
+        </div>
+        {% render 'garage-buttons', product: product %}
 
         <div class="accordion">
           <details open>

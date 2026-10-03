@@ -1,12 +1,13 @@
 {%- comment -%}
-  Wishlist toggle (SOP §20). Phase 1 stores handles in localStorage and syncs
-  to a customer metafield via an app proxy when one is configured (see docs).
+  Wishlist toggle (SOP §20). Guests: stored in the browser. Logged-in collectors: synced to their account
+  through the collector service, which also maintains the demand count (Phase 2).
   Params: product, style: 'icon' | 'full'
 {%- endcomment -%}
 <button
   type="button"
   class="{% if style == 'full' %}wishlist-button{% else %}wishlist-toggle{% endif %}"
   data-wishlist-toggle="{{ product.handle }}"
+  data-product-id="{{ product.id }}"
   aria-pressed="false"
   aria-label="{{ 'wishlist.add' | t }}: {{ product.title | escape }}"
 >

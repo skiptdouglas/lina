@@ -57,6 +57,14 @@
         {{ customer.default_address | format_address }}
         <a href="{{ routes.account_addresses_url }}" class="button button--outline">{{ 'account.manage_addresses' | t }}</a>
         <a href="/pages/wishlist" class="button">{{ 'wishlist.title' | t }}</a>
+        {%- if settings.collector_enabled -%}
+          <hr style="border:0;border-top:1px solid #d6d7d9;width:100%">
+          <h3>{{ 'garage.title' | t }}</h3>
+          {%- assign owned_count = customer.metafields.scale.garage_stats.value.owned | default: 0 -%}
+          <p>{{ 'garage.summary' | t: owned: owned_count }}</p>
+          <a href="/pages/garage" class="button">{{ 'garage.view' | t }}</a>
+          <a href="/pages/collector-profile" class="button button--outline">{{ 'collector.edit' | t }}</a>
+        {%- endif -%}
       </aside>
     </div>
   </div>

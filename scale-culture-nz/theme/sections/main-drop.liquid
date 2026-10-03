@@ -30,7 +30,13 @@
       </p>
       {%- if upcoming -%}{% render 'countdown', target: drop.release_date.value %}{%- endif -%}
       {%- if drop.summary != blank -%}<div class="rte" style="color:#cfd0d2">{{ drop.summary | metafield_tag }}</div>{%- endif -%}
-      {%- if upcoming -%}<a href="#drop-alerts" class="button button--accent">{{ 'drops.notify' | t }}</a>{%- endif -%}
+      {%- if upcoming -%}
+        {%- if settings.klaviyo_public_key != blank -%}
+          {% render 'drop-reminder', drop: drop %}
+        {%- else -%}
+          <a href="#drop-alerts" class="button button--accent">{{ 'drops.notify' | t }}</a>
+        {%- endif -%}
+      {%- endif -%}
     </div>
   </div>
 </section>

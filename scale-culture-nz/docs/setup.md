@@ -120,10 +120,10 @@ Settings → Shipping and delivery:
 | Pre-order **deposits** / partial payment | **PreProduct** or Shopify's **Pre-order** selling plans | Deposits need a selling-plan app; the theme only *displays* the deposit. Full-price pre-orders work without an app. |
 | Email + Drop Alerts | **Klaviyo** | Turn on the Shopify integration. The newsletter form saves customer tags like `interest:make:nissan`, `interest:type:1-64` and `interest:brand:inno64`, which Klaviyo syncs, so you can build segments from them. |
 | Restock / back-in-stock alerts (Phase 2) | Klaviyo Back in Stock | Turn on when ready. |
-| Wishlist demand reporting | **Wishlist Plus (Swym)** or **Wishlist King** | Phase 1 keeps wishlists in the browser. When an app is installed, replace `snippets/wishlist-button.liquid` with the app block to get "32 customers want this" reporting (§20). |
+| Wishlist demand reporting | Built in (Phase 2) | Phase 1 keeps wishlists in the browser. The Phase 2 collector service syncs them to customer accounts and maintains the "32 collectors want this" count (§20). See `phase-2.md`. |
 | Google Analytics 4 + Merchant Centre | **Google & YouTube** channel | Product feed uses the SEO title/description, GTIN (barcode), MPN and brand. |
 | Meta Pixel, Facebook, Instagram Shopping | **Facebook & Instagram** channel | Turn on Conversions API. |
-| Reviews (Phase 2) | Judge.me | |
+| Reviews (Phase 2) | Judge.me or Shopify Product Reviews | Add its block to the product *Reviews* section. Stars come from the standard `reviews.rating` metafields. |
 
 ## 9. SEO (§32)
 

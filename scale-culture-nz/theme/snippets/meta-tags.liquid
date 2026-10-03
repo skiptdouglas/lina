@@ -44,6 +44,11 @@
       "sku": {{ current_variant.sku | json }},
       {%- if current_variant.barcode != blank %}"gtin": {{ current_variant.barcode | json }},{% endif %}
       "brand": { "@type": "Brand", "name": {{ product.vendor | json }} },
+      {%- assign rv = product.metafields.reviews.rating.value -%}
+      {%- assign rc = product.metafields.reviews.rating_count.value | default: 0 -%}
+      {%- if rv != blank and rc > 0 %}
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": {{ rv.rating | json }}, "bestRating": {{ rv.scale_max | json }}, "reviewCount": {{ rc | json }} },
+      {%- endif %}
       "description": {{ product.description | strip_html | truncatewords: 60 | json }},
       "image": [{% for media in product.media limit: 5 %}"https:{{ media | image_url: width: 1200 }}"{% unless forloop.last %},{% endunless %}{% endfor %}],
       {%- if m.mpn != blank %}"mpn": {{ m.mpn.value | json }},{% endif %}

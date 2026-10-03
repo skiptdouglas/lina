@@ -61,8 +61,33 @@ export const PRODUCT_METAFIELDS = [
   { key: 'preorder_nz_arrival', name: 'Pre-order: expected NZ arrival', type: 'single_line_text_field', description: 'e.g. December 2026' },
   { key: 'preorder_deposit', name: 'Pre-order: deposit', type: 'single_line_text_field', description: 'e.g. $10 — leave blank if paid in full' },
   { key: 'preorder_allocation', name: 'Pre-order: total allocation', type: 'number_integer' },
-  { key: 'drop', name: 'Drop', type: 'metaobject_reference', metaobject: 'drop' }
+  { key: 'drop', name: 'Drop', type: 'metaobject_reference', metaobject: 'drop' },
+  // Phase 2 — maintained by the collector service, not edited by hand
+  { key: 'wishlist_count', name: 'Wishlist demand (collectors)', type: 'number_integer', filter: true, description: 'Number of logged-in collectors with this model on their wishlist. Maintained automatically.' }
 ];
+
+// Phase 2 (SOP §19, §20, §37) — written by collector-service, read by the theme in Liquid.
+export const CUSTOMER_METAFIELDS = [
+  { key: 'garage', name: 'My Garage', type: 'json', description: 'Owned / wanted / pre-ordered models with product snapshots' },
+  { key: 'garage_stats', name: 'My Garage stats', type: 'json', description: 'Totals, by-make breakdown and model collections' },
+  { key: 'profile', name: 'Collector profile', type: 'json', description: 'Display name, interests, public profile settings' },
+  { key: 'wishlist', name: 'Wishlist', type: 'json', description: 'Product handles' }
+];
+
+export const COLLECTOR_METAOBJECT = {
+  type: 'collector',
+  name: 'Collector profile',
+  displayNameKey: 'display_name',
+  urlHandle: 'collector',
+  fields: [
+    { key: 'display_name', name: 'Display name', type: 'single_line_text_field', required: true },
+    { key: 'owner', name: 'Owner (hashed)', type: 'single_line_text_field', required: true },
+    { key: 'bio', name: 'Bio', type: 'multi_line_text_field' },
+    { key: 'location', name: 'Location', type: 'single_line_text_field' },
+    { key: 'stats', name: 'Garage stats', type: 'json' },
+    { key: 'garage', name: 'Public garage', type: 'json' }
+  ]
+};
 
 export const COLLECTION_METAFIELDS = [
   { key: 'brand_logo', name: 'Brand logo', type: 'file_reference', fileTypes: ['Image'] }

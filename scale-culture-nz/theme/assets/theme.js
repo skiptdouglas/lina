@@ -151,7 +151,24 @@
     return grid.children.length;
   };
 
-  /* Wishlist (Phase 1: localStorage; see docs/apps.md for the server-side upgrade) */
+  /* Collector service (Phase 2) — reached through the Shopify app proxy, which signs
+     each request with the logged-in customer id. */
+  const ctx = window.ScaleCulture || {};
+  const collector = ctx.collector || {};
+  const collectorOn = Boolean(collector.enabled && collector.loggedIn);
+  const api = async (path, body) => {
+    const res = await fetch(`${collector.proxy}${path}`, {
+      method: body ? 'POST' : 'GET',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      credentials: 'same-origin',
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  };
+
+  /* Wishlist: browser storage for guests, synced to the account for logged-in collectors */
   const WISHLIST_KEY = 'sc:wishlist';
   const getWishlist = () => store.get(WISHLIST_KEY, []);
   const renderWishlistState = () => {
@@ -179,12 +196,25 @@
         const next = list.includes(handle) ? list.filter((h) => h !== handle) : [handle, ...list];
         store.set(WISHLIST_KEY, next);
         renderWishlistState();
+        if (collectorOn) {
+          api('/wishlist', { handle, product_id: btn.dataset.productId, saved: next.includes(handle) }).catch(() => {});
+        }
         document.dispatchEvent(new CustomEvent('wishlist:change', { detail: { handle, saved: next.includes(handle) } }));
       });
     });
     renderWishlistState();
   }
   bindWishlist();
+
+  if (collectorOn && Array.isArray(collector.wishlist)) {
+    const local = getWishlist();
+    const merged = [...new Set([...collector.wishlist, ...local])];
+    store.set(WISHLIST_KEY, merged);
+    renderWishlistState();
+    if (local.some((h) => !collector.wishlist.includes(h))) {
+      api('/wishlist', { merge: local }).catch(() => {});
+    }
+  }
 
   const wishlistGrid = $('[data-wishlist-grid]');
   if (wishlistGrid) {
@@ -234,4 +264,140 @@
       })
       .catch(() => {});
   });
+
+  /* My Garage: Owned / Wanted / Pre-ordered toggles (product page) */
+  $$('[data-garage-control]').forEach((control) => {
+    const productId = control.dataset.productId;
+    const buttons = $$('[data-garage-status]', control);
+    buttons.forEach((btn) =>
+      btn.addEventListener('click', async () => {
+        const active = btn.getAttribute('aria-pressed') === 'true';
+        const status = active ? null : btn.dataset.garageStatus;
+        buttons.forEach((b) => (b.disabled = true));
+        try {
+          await api('/garage', { product_id: productId, status });
+          buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.garageStatus === status)));
+          const link = $('[data-garage-link]', control);
+          if (link) link.hidden = !status;
+        } catch (e) {
+          window.alert(e.message);
+        } finally {
+          buttons.forEach((b) => (b.disabled = false));
+        }
+      })
+    );
+    const select = $('[data-garage-select]', control);
+    if (select) {
+      select.addEventListener('change', async () => {
+        select.disabled = true;
+        try {
+          await api('/garage', { product_id: productId, status: select.value || null });
+          window.location.reload();
+        } catch (e) {
+          window.alert(e.message);
+          select.disabled = false;
+        }
+      });
+    }
+  });
+
+  /* My Garage page: status tabs */
+  const tabs = $('[data-garage-tabs]');
+  if (tabs) {
+    tabs.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-filter]');
+      if (!tab) return;
+      $$('[data-filter]', tabs).forEach((t) => t.setAttribute('aria-selected', String(t === tab)));
+      $$('[data-garage-item]').forEach((item) => {
+        item.hidden = tab.dataset.filter !== 'all' && item.dataset.status !== tab.dataset.filter;
+      });
+    });
+  }
+
+  /* Collector profile */
+  const profileForm = $('[data-profile-form]');
+  if (profileForm) {
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = new FormData(profileForm);
+      const status = $('[data-profile-status]', profileForm);
+      const body = {
+        display_name: f.get('display_name'),
+        location: f.get('location'),
+        bio: f.get('bio'),
+        public: f.has('public'),
+        show_wanted: f.has('show_wanted'),
+        auto_garage: f.has('auto_garage'),
+        interests: {
+          makes: f.getAll('makes'),
+          scales: f.getAll('scales'),
+          brands: f.getAll('brands'),
+          categories: f.getAll('categories')
+        }
+      };
+      status.textContent = 'Saving…';
+      try {
+        const res = await api('/profile', body);
+        status.textContent = 'Saved.';
+        const link = $('[data-profile-public-link]', profileForm);
+        if (link) {
+          link.hidden = !res.url;
+          if (res.url) link.href = res.url;
+        }
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    });
+  }
+
+  /* Klaviyo client API: restock alerts + drop reminders (public site key only) */
+  const klaviyo = async (endpoint, data) => {
+    const res = await fetch(`https://a.klaviyo.com/client/${endpoint}/?company_id=${encodeURIComponent(ctx.klaviyo)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/vnd.api+json', revision: '2024-10-15' },
+      body: JSON.stringify({ data })
+    });
+    if (!res.ok) throw new Error('Something went wrong — please try again.');
+  };
+  const profileRef = (email) => ({ data: { type: 'profile', attributes: { email } } });
+
+  $$('[data-restock-form]').forEach((form) =>
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = $('[data-restock-status]', form);
+      try {
+        await klaviyo('back-in-stock-subscriptions', {
+          type: 'back-in-stock-subscription',
+          attributes: { channels: ['EMAIL'], profile: profileRef(form.email.value) },
+          relationships: { variant: { data: { type: 'catalog-variant', id: `$shopify:::$default:::${form.dataset.variantId}` } } }
+        });
+        status.textContent = "You're on the list — we'll email you when it's available.";
+        form.querySelector('button').disabled = true;
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    })
+  );
+
+  $$('[data-drop-reminder]').forEach((form) =>
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = $('[data-restock-status]', form);
+      const d = form.dataset;
+      try {
+        await klaviyo('events', {
+          type: 'event',
+          attributes: {
+            properties: { drop_name: d.dropName, drop_handle: d.dropHandle, release_date: d.dropDate, brands: d.dropBrands, url: d.dropUrl },
+            metric: { data: { type: 'metric', attributes: { name: 'Drop Reminder Requested' } } },
+            profile: profileRef(form.email.value)
+          }
+        });
+        status.textContent = "Reminder set — we'll email you when the drop goes live.";
+        form.querySelector('button').disabled = true;
+      } catch (err) {
+        status.textContent = err.message;
+      }
+    })
+  );
 })();

@@ -1,0 +1,17 @@
+{%- comment -%}
+  Restock / release alert (SOP §37) — Klaviyo back-in-stock subscription.
+  Params: product, variant, state
+{%- endcomment -%}
+{%- if settings.klaviyo_public_key != blank -%}
+  <form class="restock-form" data-restock-form data-variant-id="{{ variant.id }}">
+    <p class="restock-form__title">
+      {%- if state == 'sold_out' -%}{{ 'restock.sold_out' | t }}{%- else -%}{{ 'restock.coming_soon' | t }}{%- endif -%}
+    </p>
+    <div class="field-row">
+      <label for="Restock-{{ variant.id }}" class="visually-hidden">{{ 'newsletter.email' | t }}</label>
+      <input id="Restock-{{ variant.id }}" class="input" type="email" name="email" required autocomplete="email" placeholder="{{ 'newsletter.email' | t }}" value="{{ customer.email }}">
+      <button type="submit" class="button">{{ 'restock.submit' | t }}</button>
+    </div>
+    <p class="restock-form__status" role="status" data-restock-status></p>
+  </form>
+{%- endif -%}

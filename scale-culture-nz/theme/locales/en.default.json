@@ -1,5 +1,7 @@
 {
-  "accessibility": { "skip_to_content": "Skip to content" },
+  "accessibility": {
+    "skip_to_content": "Skip to content"
+  },
   "general": {
     "close": "Close",
     "view_all": "View all",
@@ -87,7 +89,11 @@
     "added": "Saved to wishlist",
     "removed": "Removed from wishlist",
     "empty": "Nothing saved yet. Tap the heart on any model to save it here.",
-    "login_hint": "Log in to keep your wishlist across devices."
+    "login_hint": "Log in to keep your wishlist across devices.",
+    "demand": {
+      "one": "1 collector has this on their wishlist",
+      "other": "{{ count }} collectors have this on their wishlist"
+    }
   },
   "drops": {
     "upcoming": "Upcoming drop",
@@ -105,7 +111,9 @@
     "product_count": {
       "one": "1 model",
       "other": "{{ count }} models"
-    }
+    },
+    "remind": "Remind me",
+    "remind_title": "Get an email the moment this drop goes live."
   },
   "brands": {
     "new_releases": "New releases",
@@ -184,5 +192,68 @@
     "shipping_details": "Shipping details",
     "manage_addresses": "Manage addresses"
   },
-  "footer": { "payments": "Visa · Mastercard · Apple Pay · Google Pay" }
+  "footer": {
+    "payments": "Visa · Mastercard · Apple Pay · Google Pay"
+  },
+  "garage": {
+    "title": "My Garage",
+    "eyebrow": "Your collection",
+    "add_to": "Add to My Garage",
+    "owned": "Owned",
+    "wanted": "Wanted",
+    "preordered": "Pre-ordered",
+    "status": "Garage status",
+    "remove": "Remove from garage",
+    "view": "View My Garage",
+    "login_to_add": "Log in to track this model in My Garage",
+    "intro": "Track every model you own, want and have on pre-order — and see your collection by manufacturer.",
+    "empty": "Your garage is empty",
+    "empty_hint": "Mark models as Owned, Wanted or Pre-ordered from any product page. Purchases here are added automatically.",
+    "models_owned": "Models owned",
+    "all": "All",
+    "collection": "Collection",
+    "wanted_count": {
+      "one": "1 wanted",
+      "other": "{{ count }} wanted"
+    },
+    "preordered_count": {
+      "one": "1 pre-ordered",
+      "other": "{{ count }} pre-ordered"
+    },
+    "summary": "{{ owned }} models owned"
+  },
+  "collector": {
+    "eyebrow": "Collector",
+    "edit": "Collector profile",
+    "view_public": "View public profile",
+    "display_name": "Display name",
+    "location": "Location",
+    "bio": "About your collection",
+    "bio_placeholder": "R34s in every colour INNO64 has made…",
+    "interests_makes": "Vehicle brands you collect",
+    "interests_scales": "Scales",
+    "interests_brands": "Model brands",
+    "interests_categories": "Interests",
+    "public": "Make my garage public (shows owned models, never notes or prices)",
+    "show_wanted": "Show my wanted list on my public profile",
+    "auto_garage": "Add my purchases to My Garage automatically",
+    "save": "Save profile"
+  },
+  "recommend": {
+    "eyebrow": "Picked from your interests",
+    "from_garage": "From your garage",
+    "complete": "Complete your {{ group }} collection"
+  },
+  "restock": {
+    "sold_out": "Sold out — get an email if it comes back.",
+    "coming_soon": "Not released yet — get an email when it's available.",
+    "submit": "Notify me"
+  },
+  "reviews": {
+    "rated": "Rated {{ rating }} out of {{ max }}",
+    "count": {
+      "one": "1 review",
+      "other": "{{ count }} reviews"
+    }
+  }
 }

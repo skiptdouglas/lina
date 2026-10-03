@@ -1,0 +1,14 @@
+{%- comment -%}
+  Star rating from Shopify's standard review metafields (reviews.rating /
+  reviews.rating_count), populated by any reviews app (SOP §37 customer reviews).
+{%- endcomment -%}
+{%- assign r = product.metafields.reviews.rating.value -%}
+{%- assign n = product.metafields.reviews.rating_count.value | default: 0 -%}
+{%- if r != blank and n > 0 -%}
+  {%- assign pct = r.rating | divided_by: r.scale_max | times: 100 -%}
+  <span class="rating" title="{{ r.rating | round: 1 }} / {{ r.scale_max }}">
+    <span class="rating__stars" style="--pct: {{ pct }}%" aria-hidden="true">★★★★★</span>
+    <span class="visually-hidden">{{ 'reviews.rated' | t: rating: r.rating, max: r.scale_max }}</span>
+    {%- if full -%}<a href="#reviews" class="rating__count">{{ 'reviews.count' | t: count: n }}</a>{%- else -%}<span class="rating__count">({{ n }})</span>{%- endif -%}
+  </span>
+{%- endif -%}

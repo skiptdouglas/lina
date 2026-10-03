@@ -1,0 +1,20 @@
+{%- comment -%} "Models owned: 84 — Nissan 21 / Porsche 17 / ..." Params: stats {%- endcomment -%}
+<div class="garage-stats">
+  <div class="garage-stats__total">
+    <span class="eyebrow">{{ 'garage.models_owned' | t }}</span>
+    <strong>{{ stats.owned | default: 0 }}</strong>
+    <span class="garage-stats__sub">{{ 'garage.wanted_count' | t: count: stats.wanted }} · {{ 'garage.preordered_count' | t: count: stats.preordered }}</span>
+  </div>
+  {%- if stats.owned > 0 -%}
+    <ul class="garage-stats__makes">
+      {%- for m in stats.makes -%}
+        {%- assign pct = m.count | times: 100 | divided_by: stats.owned -%}
+        <li>
+          <span>{{ m.make }}</span>
+          <span class="garage-stats__bar"><span style="width:{{ pct }}%"></span></span>
+          <b>{{ m.count }}</b>
+        </li>
+      {%- endfor -%}
+    </ul>
+  {%- endif -%}
+</div>

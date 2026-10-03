@@ -442,3 +442,76 @@ h3 { font-size: 1.25rem; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---------- Phase 2: collector features ---------- */
+.product__collector { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+.demand { display: inline-flex; align-items: center; gap: 6px; margin: 0; font-size: 0.8125rem; font-weight: 600; color: var(--color-accent); }
+.demand svg { width: 16px; height: 16px; fill: currentColor; }
+
+.garage-control { display: grid; gap: 8px; padding: 14px 0; border-top: 1px solid var(--color-light); }
+.garage-control__link { font-size: 0.8125rem; font-weight: 600; text-decoration: underline; }
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--color-black); border-radius: var(--radius); overflow: hidden; }
+.segmented button { min-height: 40px; background: var(--color-white); border: 0; border-left: 1px solid var(--color-black); font: 700 0.875rem/1 var(--font-heading); letter-spacing: 0.1em; text-transform: uppercase; }
+.segmented button:first-child { border-left: 0; }
+.segmented button[aria-pressed='true'] { background: var(--color-black); color: var(--color-white); }
+.segmented button[aria-pressed='true'][data-garage-status='preordered'] { background: var(--color-accent); }
+.segmented button:disabled { opacity: 0.6; }
+
+.restock-form { display: grid; gap: 8px; padding: 14px; background: var(--color-light); }
+.section--dark .restock-form { background: var(--color-charcoal); }
+.restock-form__title { margin: 0; font-weight: 600; font-size: 0.875rem; }
+.restock-form__status { margin: 0; font-size: 0.8125rem; }
+.restock-form .input,
+.restock-form input[type='email'] { flex: 1 1 200px; }
+
+.rating { display: inline-flex; align-items: center; gap: 6px; font-size: 0.8125rem; }
+.rating__stars { position: relative; display: inline-block; color: #c9cbcd; letter-spacing: 2px; line-height: 1; }
+.rating__stars::before { content: '★★★★★'; position: absolute; inset: 0; width: var(--pct); overflow: hidden; color: var(--color-black); letter-spacing: 2px; }
+.section--dark .rating__stars::before { color: var(--color-white); }
+.rating__count { color: var(--color-grey); }
+a.rating__count { text-decoration: underline; }
+
+.garage-head { display: grid; gap: 24px; margin-bottom: 32px; }
+@media (min-width: 990px) { .garage-head { grid-template-columns: 1fr 1fr; align-items: end; } }
+.garage-head__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.garage-stats { display: grid; gap: 16px; }
+@media (min-width: 750px) { .garage-stats { grid-template-columns: auto 1fr; gap: 40px; align-items: center; } }
+.garage-stats__total strong { display: block; font: 800 clamp(4rem, 10vw, 6.5rem)/0.9 var(--font-heading); }
+.garage-stats__sub { font-size: 0.8125rem; color: var(--color-grey); }
+.garage-stats__makes { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.garage-stats__makes li { display: grid; grid-template-columns: 110px 1fr 32px; gap: 10px; align-items: center; font: 700 0.9375rem/1 var(--font-heading); text-transform: uppercase; letter-spacing: 0.06em; }
+.garage-stats__makes b { text-align: right; }
+.garage-stats__bar { height: 8px; background: var(--color-light); }
+.section--dark .garage-stats__bar { background: var(--color-graphite); }
+.garage-stats__bar span { display: block; height: 100%; background: var(--color-accent); }
+
+.garage-filters { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; }
+.garage-filters button { flex: none; padding: 10px 16px; border: 1px solid var(--color-black); border-radius: 999px; background: none; font: 600 0.8125rem/1 var(--font-body); }
+.garage-filters button[aria-selected='true'] { background: var(--color-black); color: var(--color-white); }
+
+.garage-collections { display: grid; gap: 8px; margin-bottom: 32px; }
+@media (min-width: 750px) { .garage-collections { grid-template-columns: repeat(2, 1fr); } }
+.garage-collection { border: 1px solid var(--color-light); padding: 0 14px; }
+.garage-collection summary { cursor: pointer; padding: 14px 0; display: flex; gap: 8px; align-items: baseline; font-family: var(--font-heading); text-transform: uppercase; letter-spacing: 0.06em; }
+.garage-collection summary span { margin-left: auto; color: var(--color-grey); }
+.garage-collection ul { list-style: none; margin: 0; padding: 0 0 14px; display: grid; gap: 6px; font-size: 0.875rem; }
+.garage-collection a { text-decoration: underline; }
+.garage-collection small { color: var(--color-grey); }
+.garage-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--color-grey); }
+.garage-dot--owned { background: var(--color-success); }
+.garage-dot--preordered { background: var(--color-accent); }
+.garage-item__actions { margin-top: 8px; position: relative; z-index: 3; }
+.garage-item[hidden] { display: none; }
+
+.collector-form { display: grid; gap: 20px; }
+.collector-form label { display: grid; gap: 6px; font-weight: 600; font-size: 0.875rem; }
+.collector-form textarea.input { padding: 10px 12px; min-height: 88px; font: inherit; }
+.collector-form__grid { display: grid; gap: 16px; }
+@media (min-width: 750px) { .collector-form__grid { grid-template-columns: 1fr 1fr; } }
+.collector-form fieldset { border: 0; padding: 0; margin: 0; }
+.collector-form legend { font: 700 0.8125rem/1 var(--font-body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-grey); margin-bottom: 12px; }
+.collector-form__toggles { display: grid; gap: 10px; }
+.collector-form__toggles label { display: flex; gap: 10px; align-items: center; font-weight: 500; }
+.collector-form__toggles input { width: 18px; height: 18px; accent-color: var(--color-accent); }
+.chips--light .chip span { border-color: #c9cbcd; }
+.chip { display: inline-block; }
